@@ -2,4 +2,6 @@
 *.csv
 *.xlsx
 
-**/__pychache__
+**/__pycache__
+
+**programa_quintiles_santi.py
