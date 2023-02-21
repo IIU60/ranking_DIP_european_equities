@@ -5,10 +5,11 @@ import matplotlib.pyplot as plt
 import datetime as dt
 import dateutil.relativedelta
 from tqdm import tqdm
-
+import os
 ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
 
 def get_data(fields:list,desired_field_name:str):
+    
     start_date = dt.date(2000,1,1)
     end_date = dt.date(2023,1,1)
     dates = [start_date]
@@ -52,6 +53,23 @@ def get_data(fields:list,desired_field_name:str):
 
     return pivoted_df,errors_dict
 
+def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio = 0.8, min_total_dates_ratio = 0.8):
+    
+    good_dfs = {}
+    bad_dfs = {}
+    
+    for filename in os.listdir(pivoted_data_directory_filepath):
+        filepath = os.path.join(pivoted_data_directory_filepath,filename)
+        df = pd.read_csv(filepath,index_col=0)
+        len_input = len(df)
+        df = df.dropna(axis=0,how='all').dropna(axis=1,how='all')
+        df = df.loc[(df.notna().sum(axis=1)/600)>min_stocks_per_date_ratio]
+        maintained_dates_ratio = len(df)/len_input
+        if maintained_dates_ratio > min_total_dates_ratio:
+            good_dfs[filename+' '+str(round(maintained_dates_ratio,3))] = df
+        else:
+            bad_dfs[filename+' '+str(round(maintained_dates_ratio,3))] = df
+    return good_dfs,bad_dfs
 
 def rank_data(pivoted_df, prices_csv_filepath, return_notna_graph = True, n_quantiles = 5):
 
