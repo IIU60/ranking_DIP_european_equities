@@ -1,0 +1,5 @@
+**/data
+*.csv
+*.xlsx
+
+*__pychache__
