@@ -6,10 +6,12 @@ import datetime as dt
 import dateutil.relativedelta
 from tqdm import tqdm
 import os
-ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
+
 
 def get_data(fields:list,desired_field_name:str):
     
+    ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
+
     start_date = dt.date(2000,1,1)
     end_date = dt.date(2023,1,1)
     dates = [start_date]
@@ -53,7 +55,8 @@ def get_data(fields:list,desired_field_name:str):
 
     return pivoted_df,errors_dict
 
-def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio = 0.8, min_total_dates_ratio = 0.8):
+
+def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8):
     
     good_dfs = {}
     bad_dfs = {}
@@ -71,26 +74,20 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio = 0.8
             bad_dfs[filename+' '+str(round(maintained_dates_ratio,3))] = df
     return good_dfs,bad_dfs
 
-def rank_data(pivoted_df, prices_csv_filepath, return_notna_graph = True, n_quantiles = 5):
 
-    len_input = len(pivoted_df)
+def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False):
+
+    #len_input = len(pivoted_df)
 
     pivoted_df = pivoted_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
-    pivoted_df = pivoted_df.loc[pivoted_df.notna().sum(axis=1)>200]
+    pivoted_df = pivoted_df.loc[(pivoted_df.notna().sum(axis=1)/600)>0.8] # Estas dos lineas tambien se tendran que borrar y que la funcion solo reciba datos limpios
 
     ranked_df = pivoted_df.copy()
-    ###### HAY QUE HACER DE FORMA VECTORIZADA #########
+
     for date,prices in zip(pivoted_df.index,pivoted_df.astype(float).values):
         ranked_df.loc[date] = pd.qcut(prices,n_quantiles,duplicates='drop',labels=False)
 
     #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
-    def deciles_lists(df):
-        diccionario = {}
-        for i in range(n_quantiles):
-            diccionario[f'decil_{i}'] = {}
-            for date,ranks in df.T.items():
-                diccionario[f'decil_{i}'][date] = ranks.loc[ranks == i].index.tolist()
-        return diccionario
 
     precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
 
@@ -100,29 +97,33 @@ def rank_data(pivoted_df, prices_csv_filepath, return_notna_graph = True, n_quan
     precios_df = precios_df.loc[:,ranked_df.columns]
 
     try:
-        ranked_df.drop(index='2000-01-01',inplace=True)
+        ranked_df.drop(index='2000-01-01',inplace=True)  #
     except KeyError:
         pass
 
-    deciles_dict = deciles_lists(ranked_df)
     rentabilidad_acciones_df = precios_df.pct_change()
 
-    rentabilidades_dict = {}
-    rentabilidades_dict['equiponderado'] = {}
-    for decil,fechas in deciles_dict.items():
-        rentabilidades_dict[decil] = {}
-        for fecha, stocks in fechas.items():
-            rentabilidades_dict[decil][fecha] = rentabilidad_acciones_df.loc[fecha,stocks].mean()
-            rentabilidades_dict['equiponderado'][fecha] = rentabilidad_acciones_df.loc[fecha].mean()
+    deciles_df = pd.DataFrame(columns = ['equiponderado'])
+    for i in range(n_quantiles):
+        rents_list = []
+        for date,ranks in ranked_df.T.items():
+            rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
+        deciles_df[f'decil_{i}'] = rents_list
+    deciles_df['equiponderado'] = deciles_df.mean(axis=1)  # ESTO NO SE PUEDE HACER ASI
 
-    if return_notna_graph == True:
-        notna_graph = plt.figure()
-        (pivoted_df.notna().sum(axis=1)/600).plot()
-        plt.title(f'Dates kept:{len(ranked_df)}/{len_input}')
-        plt.close()
-        return rentabilidades_dict, notna_graph
+    if return_dict == True:  # Esto habrá que quitarlo cuando se reescriban los plots para un DF
+        rentabilidades_dict = deciles_df.set_index(ranked_df.index).to_dict()
+        return rentabilidades_dict
+
+    #if return_notna_graph == True:
+    #    notna_graph = plt.figure()
+    #    (pivoted_df.notna().sum(axis=1)/600).plot()
+    #    plt.title(f'Dates kept:{len(ranked_df)}/{len_input}')
+    #    plt.close()
+    #    return rentabilidades_dict, notna_graph
     
-    return rentabilidades_dict
+    return deciles_df
+
 
 def plot_NAV_absoluto(rentabilidades_dict):
 
@@ -135,6 +136,7 @@ def plot_NAV_absoluto(rentabilidades_dict):
     plt.close()
     return fig
     
+
 def plot_NAV_relativo(rentabilidades_dict):
     equiponderado = np.array(list(rentabilidades_dict['equiponderado'].values()))
     fig = plt.figure(figsize=(20,10))
@@ -146,6 +148,7 @@ def plot_NAV_relativo(rentabilidades_dict):
     plt.close()
     return fig
 
+
 def plot_rentabilidad_media(rentabilidades_dict):
     keys = list(rentabilidades_dict.keys())
     rentabilidades_medias = [np.mean(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
@@ -156,6 +159,7 @@ def plot_rentabilidad_media(rentabilidades_dict):
     plt.close()
     return fig
 
+
 def plot_Volatilidad(rentabilidades_dict):
     volatilidades_anualizadas = [np.std(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
     keys = list(rentabilidades_dict.keys())
@@ -165,6 +169,7 @@ def plot_Volatilidad(rentabilidades_dict):
     plt.title('Volatilidad Anualizada')
     plt.close()
     return fig
+
 
 def plot_sharpe(rentabilidades_dict):
     rentabilidades_medias = [np.mean(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
