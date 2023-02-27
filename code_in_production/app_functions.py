@@ -109,7 +109,7 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False)
         for date,ranks in ranked_df.T.items():
             rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
         deciles_df[f'decil_{i}'] = rents_list
-    deciles_df['equiponderado'] = deciles_df.mean(axis=1)  # ESTO NO SE PUEDE HACER ASI
+    deciles_df['equiponderado'] = deciles_df.mean(axis=1)
 
     if return_dict == True:  # Esto habrá que quitarlo cuando se reescriban los plots para un DF
         rentabilidades_dict = deciles_df.set_index(ranked_df.index).to_dict()
