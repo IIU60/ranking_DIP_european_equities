@@ -1,4 +1,4 @@
-import eikon as ek
+#import eikon as ek
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +6,7 @@ import datetime as dt
 import dateutil.relativedelta
 from tqdm import tqdm
 import os
+import streamlit as st
 
 
 def get_data(fields:list,desired_field_name:str):
@@ -55,7 +56,7 @@ def get_data(fields:list,desired_field_name:str):
 
     return pivoted_df,errors_dict
 
-
+@st.cache_data
 def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8):
     
     good_dfs = {}
@@ -69,12 +70,12 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
         df = df.loc[(df.notna().sum(axis=1)/600)>min_stocks_per_date_ratio]
         maintained_dates_ratio = len(df)/len_input
         if maintained_dates_ratio > min_total_dates_ratio:
-            good_dfs[filename+' '+str(round(maintained_dates_ratio,3))] = df
+            good_dfs[filename.strip('pivoted_').strip('.csv')] = df
         else:
-            bad_dfs[filename+' '+str(round(maintained_dates_ratio,3))] = df
+            bad_dfs[filename.strip('pivoted_').strip('.csv')] = df
     return good_dfs,bad_dfs
 
-
+@st.cache_data
 def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False):
 
     #len_input = len(pivoted_df)
@@ -133,7 +134,7 @@ def plot_NAV_absoluto(rentabilidades_dict):
     plt.xticks(rotation=-45,fontsize=10,ha='left',rotation_mode='anchor')
     plt.legend()
     plt.title('NAV Absoluto')
-    plt.close()
+    #plt.close()
     return fig
     
 
@@ -145,7 +146,7 @@ def plot_NAV_relativo(rentabilidades_dict):
     plt.xticks(rotation=-45,fontsize=10,ha='left',rotation_mode='anchor')
     plt.legend()
     plt.title('NAV relativo a Equiponderado')
-    plt.close()
+    #plt.close()
     return fig
 
 
@@ -156,18 +157,18 @@ def plot_rentabilidad_media(rentabilidades_dict):
     plt.bar(keys[::-1],rentabilidades_medias[::-1])
     plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
     plt.title('Rentabilidad media anualizada')
-    plt.close()
+    #plt.close()
     return fig
 
 
-def plot_Volatilidad(rentabilidades_dict):
+def plot_volatilidad(rentabilidades_dict):
     volatilidades_anualizadas = [np.std(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
     keys = list(rentabilidades_dict.keys())
     fig = plt.figure()
     plt.bar(keys[::-1],volatilidades_anualizadas[::-1])
     plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
     plt.title('Volatilidad Anualizada')
-    plt.close()
+    #plt.close()
     return fig
 
 
@@ -180,5 +181,16 @@ def plot_sharpe(rentabilidades_dict):
     plt.bar(keys[::-1],sharpe[::-1])
     plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
     plt.title('Ratio Sharpe')
-    plt.close()
+    #plt.close()
     return fig
+
+
+
+if __name__=='__main__':
+    pivoted_df = pd.read_csv('../data/pivoted_data/pivoted_EV.csv',index_col=0)
+    prices_csv_filepath = '../data\Final Data\PriceClose.csv'
+    return_notna_graph = False
+    n_quantiles = 10
+    rents_dict = rank_data(pivoted_df,prices_csv_filepath,n_quantiles, return_dict=True)
+    plot_NAV_absoluto(rents_dict)
+    plt.show()
