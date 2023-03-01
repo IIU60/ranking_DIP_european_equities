@@ -7,6 +7,7 @@ import dateutil.relativedelta
 from tqdm import tqdm
 import os
 import streamlit as st
+import plotly.express as px
 
 
 def get_data(fields:list,desired_field_name:str):
@@ -76,7 +77,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
     return good_dfs,bad_dfs
 
 @st.cache_data
-def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False):
+def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
 
     #len_input = len(pivoted_df)
 
@@ -111,10 +112,8 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False)
             rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
         deciles_df[f'decil_{i}'] = rents_list
     deciles_df['equiponderado'] = deciles_df.mean(axis=1)
+    deciles_df = deciles_df.set_index(ranked_df.index)
 
-    if return_dict == True:  # Esto habrá que quitarlo cuando se reescriban los plots para un DF
-        rentabilidades_dict = deciles_df.set_index(ranked_df.index).to_dict()
-        return rentabilidades_dict
 
     #if return_notna_graph == True:
     #    notna_graph = plt.figure()
@@ -126,65 +125,40 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5, return_dict=False)
     return deciles_df
 
 
-def plot_NAV_absoluto(rentabilidades_dict):
-
-    fig = plt.figure(figsize=(20,10))
-    for decil in rentabilidades_dict:
-        plt.plot(list(rentabilidades_dict['decil_0'].keys()),np.array(list(rentabilidades_dict[decil].values())).cumsum(),label=decil)
-    plt.xticks(rotation=-45,fontsize=10,ha='left',rotation_mode='anchor')
-    plt.legend()
-    plt.title('NAV Absoluto')
-    #plt.close()
+def plot_NAV_absoluto(df,colors,log_scale=False):
+    fig = px.line(df.cumsum(), x=df.index, y=df.columns, color_discrete_sequence = colors)
+    fig.update_layout(hovermode='x unified')
+    if log_scale == True:
+        fig.update_yaxes(type='log')
     return fig
     
 
-def plot_NAV_relativo(rentabilidades_dict):
-    equiponderado = np.array(list(rentabilidades_dict['equiponderado'].values()))
-    fig = plt.figure(figsize=(20,10))
-    for decil in rentabilidades_dict:
-        plt.plot(list(rentabilidades_dict['decil_0'].keys()),(np.array(list(rentabilidades_dict[decil].values()))-equiponderado).cumsum(),label=decil)
-    plt.xticks(rotation=-45,fontsize=10,ha='left',rotation_mode='anchor')
-    plt.legend()
-    plt.title('NAV relativo a Equiponderado')
-    #plt.close()
+def plot_NAV_relativo(df,colors,log_scale=False):
+    fig = px.line((df.T - df.equiponderado).T.cumsum(), color_discrete_sequence = colors)
+    fig.update_layout(hovermode='x unified')
+    if log_scale == True:
+        fig.update_yaxes(type='log')
     return fig
 
 
-def plot_rentabilidad_media(rentabilidades_dict):
-    keys = list(rentabilidades_dict.keys())
-    rentabilidades_medias = [np.mean(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
-    fig = plt.figure()
-    plt.bar(keys[::-1],rentabilidades_medias[::-1])
-    plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
-    plt.title('Rentabilidad media anualizada')
-    #plt.close()
+def plot_rentabilidad_media(df,colors,*args):
+    rents_medias = pd.DataFrame(np.diag(np.mean(df*np.sqrt(12))),columns = df.columns, index = df.columns)
+    fig = px.bar(rents_medias,color_discrete_sequence=colors)
     return fig
 
 
-def plot_volatilidad(rentabilidades_dict):
-    volatilidades_anualizadas = [np.std(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
-    keys = list(rentabilidades_dict.keys())
-    fig = plt.figure()
-    plt.bar(keys[::-1],volatilidades_anualizadas[::-1])
-    plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
-    plt.title('Volatilidad Anualizada')
-    #plt.close()
+def plot_volatilidad(df,colors,*args):
+    vols = pd.DataFrame(np.diag(np.std(df*np.sqrt(12),axis=0)),columns = df.columns, index = df.columns)
+    fig = px.bar(vols,color_discrete_sequence=colors)
     return fig
 
 
-def plot_sharpe(rentabilidades_dict):
-    rentabilidades_medias = [np.mean(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
-    volatilidades_anualizadas = [np.std(list(rentabilidades_dict[decil].values()))*np.sqrt(12) for decil in rentabilidades_dict]
-    sharpe = np.array(rentabilidades_medias)/np.array(volatilidades_anualizadas)
-    keys = list(rentabilidades_dict.keys())
-    fig = plt.figure()
-    plt.bar(keys[::-1],sharpe[::-1])
-    plt.xticks(rotation=-45,ha='left',rotation_mode='anchor')
-    plt.title('Ratio Sharpe')
-    #plt.close()
+def plot_sharpe(df,colors,*args):
+    rents_medias = np.mean(df*np.sqrt(12),axis=0)
+    vols_anualizadas = np.std(df*np.sqrt(12),axis=0)
+    sharpe = pd.DataFrame(np.diag(rents_medias/vols_anualizadas),columns = df.columns, index = df.columns)
+    fig = px.bar(sharpe,color_discrete_sequence=colors)
     return fig
-
-
 
 if __name__=='__main__':
     pivoted_df = pd.read_csv('../data/pivoted_data/pivoted_EV.csv',index_col=0)
