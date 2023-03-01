@@ -1,61 +1,9 @@
-#import eikon as ek
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import datetime as dt
-import dateutil.relativedelta
-from tqdm import tqdm
 import os
 import streamlit as st
 import plotly.express as px
 
-
-def get_data(fields:list,desired_field_name:str):
-    
-    ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
-
-    start_date = dt.date(2000,1,1)
-    end_date = dt.date(2023,1,1)
-    dates = [start_date]
-    i = 0
-    while (dates[0] + dateutil.relativedelta.relativedelta(months=i+1)) <= end_date:
-        dates.append(dates[0] + dateutil.relativedelta.relativedelta(months=i+1))
-        i += 1
-    str_dates = list(map(str,dates))
-
-    complete_df = pd.DataFrame(columns=['Instrument','Date','CallDate'])
-
-    errors_dict = {}
-
-    for date in tqdm(str_dates,smoothing=0):
-        try:
-            returned_df,err = ek.get_data(f'0#.STOXX({date})',fields=fields,parameters={'SDate':date})
-        except Exception as x:
-            print('failed for '+ date)
-            errors_dict[date] = x
-        else:
-            returned_df['CallDate'] = date
-            complete_df = pd.concat([complete_df,returned_df],axis=0)
-
-    if not not errors_dict:
-        for date in tqdm(list(errors_dict.keys()),smoothing=0):
-            try:
-                returned_df,err = ek.get_data(f'0#.STOXX({date})',fields=fields,parameters={'SDate':date})
-            except Exception as x:
-                print('failed again for '+ date)
-                errors_dict[date] = x
-            else:
-                returned_df['CallDate'] = date
-                complete_df = pd.concat([complete_df,returned_df],axis=0)
-
-    complete_df.to_csv(f'C:/Users/hugo.perezdealbeniz/Desktop/Ranking DIP European Equities/Reuters Eikon/data/raw_data/raw_{desired_field_name}.csv',index=False)
-    
-    complete_df.rename(columns={list(set(complete_df.columns)-set(['Instrument','Date','CallDate']))[0]:desired_field_name},inplace = True)
-
-    pivoted_df = complete_df.pivot(index='CallDate',columns='Instrument', values=desired_field_name)
-    pivoted_df.to_csv(f'C:/Users/hugo.perezdealbeniz/Desktop/Ranking DIP European Equities/Reuters Eikon/data/pivoted_data/pivoted_{desired_field_name}.csv')
-
-    return pivoted_df,errors_dict
 
 @st.cache_data
 def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8):
@@ -76,20 +24,15 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
             bad_dfs[filename.strip('pivoted_').strip('.csv')] = df
     return good_dfs,bad_dfs
 
+
 @st.cache_data
 def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
 
-    #len_input = len(pivoted_df)
-
-    pivoted_df = pivoted_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
-    pivoted_df = pivoted_df.loc[(pivoted_df.notna().sum(axis=1)/600)>0.8] # Estas dos lineas tambien se tendran que borrar y que la funcion solo reciba datos limpios
-
     ranked_df = pivoted_df.copy()
 
+    #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
     for date,prices in zip(pivoted_df.index,pivoted_df.astype(float).values):
         ranked_df.loc[date] = pd.qcut(prices,n_quantiles,duplicates='drop',labels=False)
-
-    #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
 
     precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
 
@@ -99,7 +42,7 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
     precios_df = precios_df.loc[:,ranked_df.columns]
 
     try:
-        ranked_df.drop(index='2000-01-01',inplace=True)  #
+        ranked_df.drop(index='2000-01-01',inplace=True)
     except KeyError:
         pass
 
@@ -114,14 +57,6 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
     deciles_df['equiponderado'] = deciles_df.mean(axis=1)
     deciles_df = deciles_df.set_index(ranked_df.index)
 
-
-    #if return_notna_graph == True:
-    #    notna_graph = plt.figure()
-    #    (pivoted_df.notna().sum(axis=1)/600).plot()
-    #    plt.title(f'Dates kept:{len(ranked_df)}/{len_input}')
-    #    plt.close()
-    #    return rentabilidades_dict, notna_graph
-    
     return deciles_df
 
 
@@ -160,11 +95,6 @@ def plot_sharpe(df,colors,*args):
     fig = px.bar(sharpe,color_discrete_sequence=colors)
     return fig
 
+
 if __name__=='__main__':
-    pivoted_df = pd.read_csv('../data/pivoted_data/pivoted_EV.csv',index_col=0)
-    prices_csv_filepath = '../data\Final Data\PriceClose.csv'
-    return_notna_graph = False
-    n_quantiles = 10
-    rents_dict = rank_data(pivoted_df,prices_csv_filepath,n_quantiles, return_dict=True)
-    plot_NAV_absoluto(rents_dict)
-    plt.show()
+    pass
