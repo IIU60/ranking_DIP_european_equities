@@ -4,7 +4,6 @@ import os
 import streamlit as st
 import plotly.express as px
 
-
 @st.cache_data
 def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8):
     
@@ -25,14 +24,19 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
     return good_dfs,bad_dfs
 
 
-@st.cache_data
-def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
+def rank_data(pivoted_df, n_quantiles):
 
     ranked_df = pivoted_df.copy()
 
     #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
-    for date,prices in zip(pivoted_df.index,pivoted_df.astype(float).values):
-        ranked_df.loc[date] = pd.qcut(prices,n_quantiles,duplicates='drop',labels=False)
+    for date,values in zip(pivoted_df.index,pivoted_df.astype(float).values):
+        ranked_df.loc[date] = pd.qcut(values,n_quantiles,duplicates='drop',labels=False)
+
+    return ranked_df
+
+
+@st.cache_data
+def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
 
     precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
 
@@ -58,6 +62,40 @@ def rank_data(pivoted_df, prices_csv_filepath, n_quantiles=5):
     deciles_df = deciles_df.set_index(ranked_df.index)
 
     return deciles_df
+
+
+def multi_factor_ranking(weights_df, data_dict, n_quantiles):
+
+    weights_df = weights_df.loc[weights_df.Weight > 0]
+
+    ranked_data_dict = {}
+    columns_list = []
+    for factor in weights_df.Factor:
+        ranked_data_dict[factor] = rank_data(data_dict[factor],n_quantiles)
+        columns_list.append(set(ranked_data_dict[factor].columns))
+
+    common_columns = columns_list[0]
+    for i in columns_list[1:]:
+        common_columns = common_columns & i
+    common_columns = list(common_columns)
+
+    weighted_df_dict = {}
+    for factor,ranked_df in ranked_data_dict.items():
+        weight = float(weights_df.loc[weights_df.Factor==factor].Weight)
+        weighted_df_dict[factor] = ranked_df[common_columns]*weight
+
+    dates = weighted_df_dict[list(weighted_df_dict.keys())[0]].index
+    final_df_list = []
+    for date in dates:
+        summing_list = []
+        try:
+            for factor_df in weighted_df_dict.values():
+                summing_list.append(factor_df.loc[date])
+        except KeyError:
+            continue
+        final_df_list.append(sum(summing_list)/len(summing_list))
+
+    return pd.DataFrame(final_df_list)
 
 
 def plot_NAV_absoluto(df,colors,log_scale=False):
