@@ -23,7 +23,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
             bad_dfs[filename.strip('pivoted_').strip('.csv')] = df
     return good_dfs,bad_dfs
 
-
+@st.cache_data
 def rank_data(pivoted_df, n_quantiles):
 
     ranked_df = pivoted_df.copy()
@@ -63,7 +63,7 @@ def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
 
     return deciles_df
 
-
+@st.cache_data
 def multi_factor_ranking(weights_df, data_dict, n_quantiles):
 
     weights_df = weights_df.loc[weights_df.Weight > 0]
