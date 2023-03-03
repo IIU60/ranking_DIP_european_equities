@@ -132,7 +132,3 @@ def plot_sharpe(df,colors,*args):
     sharpe = pd.DataFrame(np.diag(rents_medias/vols_anualizadas),columns = df.columns, index = df.columns)
     fig = px.bar(sharpe,color_discrete_sequence=colors)
     return fig
-
-
-if __name__=='__main__':
-    pass
