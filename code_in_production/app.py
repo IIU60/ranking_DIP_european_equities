@@ -1,5 +1,6 @@
 import streamlit as st
 import app_functions as af
+import plots as pt
 import pandas as pd
 
 st.set_page_config(layout='wide')
@@ -49,15 +50,14 @@ for i in range(n_indicators):
         rents_df = af.get_rents_df(ranked_data, prices_csv_filepath,n_quantiles)
 
         graphs_dict = {
-            'NAV Absoluto': af.plot_NAV_absoluto,
-            'NAV Relativo a Equiponderado': af.plot_NAV_relativo,
-            'Rentabilidad Media Anualizada': af.plot_rentabilidad_media,
-            'Volatilidad Anualizada':af.plot_volatilidad,
-            'Sharpe Ratio':af.plot_sharpe
+            'NAV Absoluto': pt.plot_NAV_absoluto,
+            'NAV Relativo a Equiponderado': pt.plot_NAV_relativo,
+            'Rentabilidad Media Anualizada': pt.plot_rentabilidad_media,
+            'Volatilidad Anualizada':pt.plot_volatilidad,
+            'Sharpe Ratio':pt.plot_sharpe
             }
-        colors = ["#0068c9","#d7dce6","#7f51b5","#ffd578","#ff902d","#8af0aa","#2db19f","#ffb1b1","#ff3030","#83c9ff",'#000000']
 
         desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys(),key=f'desired_graphs_{i}')
        
         for graph in desired_graphs:
-            st.plotly_chart(graphs_dict[graph](rents_df,colors,log_scale),True)
+            st.plotly_chart(graphs_dict[graph](rents_df, log_scale),True)
