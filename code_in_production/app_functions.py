@@ -24,19 +24,20 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
     return good_dfs,bad_dfs
 
 @st.cache_data
-def rank_data(pivoted_df, n_quantiles):
-
-    ranked_df = pivoted_df.copy()
+def rank_data(pivoted_df, n_quantiles, type_=['alto','bajo']):
+    
+    ranks_list = []
+    labels = range(1,11) if type_=='alto' else (range(10,0,-1) if type_ == 'bajo' else 'null')
 
     #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
-    for date,values in zip(pivoted_df.index,pivoted_df.astype(float).values):
-        ranked_df.loc[date] = pd.qcut(values,n_quantiles,duplicates='drop',labels=False)
-
-    return ranked_df
+    for row in pivoted_df.values:
+        ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
+    
+    return pd.DataFrame(np.array(ranks_list), index=pivoted_df.index, columns=pivoted_df.columns),labels
 
 
 @st.cache_data
-def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
+def get_rents_df(ranked_df, prices_csv_filepath, labels):
 
     precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
 
@@ -53,7 +54,7 @@ def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
     rentabilidad_acciones_df = precios_df.pct_change()
 
     deciles_df = pd.DataFrame(columns = ['equiponderado'])
-    for i in range(n_quantiles):
+    for i in labels:
         rents_list = []
         for date,ranks in ranked_df.T.items():
             rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
@@ -70,8 +71,8 @@ def multi_factor_ranking(weights_df, data_dict, n_quantiles):
 
     ranked_data_dict = {}
     columns_list = []
-    for factor in weights_df.Factor:
-        ranked_data_dict[factor] = rank_data(data_dict[factor],n_quantiles)
+    for factor,type_ in zip(weights_df.Factor,weights_df.Type):
+        ranked_data_dict[factor] = rank_data(data_dict[factor],n_quantiles, type_)[0]
         columns_list.append(set(ranked_data_dict[factor].columns))
 
     common_columns = columns_list[0]

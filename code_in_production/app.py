@@ -17,14 +17,13 @@ if 'clean_data_dict' not in st.session_state:
 if 'create_custom_indicator' not in st.session_state:
     st.session_state.create_custom_indicator = False
 
-
 if st.button('Create Multi-factor Indicator'):
     st.session_state.create_custom_indicator = True
 
 if st.session_state.create_custom_indicator == True:
     with st.form('custom_indicator_form'):
         indicator_name = st.text_input('Indicator Name:')
-        custom_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0)),num_rows='dynamic',width=600)
+        custom_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),num_rows='dynamic',width=600)
         custom_indicator_form_button = st.form_submit_button()
     
     if custom_indicator_form_button:
@@ -33,10 +32,16 @@ if st.session_state.create_custom_indicator == True:
         st.session_state.clean_data_dict[indicator_name] = custom_indicator_df
         st.session_state.create_custom_indicator = False
         st.experimental_rerun()
-selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys())
 
-ranked_data = af.rank_data(st.session_state.clean_data_dict[selected_ratio], n_quantiles)
-rents_df = af.get_rents_df(ranked_data, prices_csv_filepath,n_quantiles)
+cols = st.columns(2)
+with cols[0]:
+    selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys())
+with cols[1]:
+    type_of_indicator = st.selectbox('Type:', ['alto','bajo'])
+log_scale = st.checkbox('Logarithmic Scale:')
+
+ranked_data, labels = af.rank_data(st.session_state.clean_data_dict[selected_ratio], n_quantiles, type_of_indicator)
+rents_df = af.get_rents_df(ranked_data, prices_csv_filepath,labels)
 
 graphs_dict = {
     'NAV Absoluto': af.plot_NAV_absoluto,
@@ -47,8 +52,9 @@ graphs_dict = {
     }
 colors = ["#0068c9","#d7dce6","#7f51b5","#ffd578","#ff902d","#8af0aa","#2db19f","#ffb1b1","#ff3030","#83c9ff",'#000000']
 
+if type_of_indicator == 'bajo':
+    colors = colors[::-1]
 desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys())
-log_scale = st.checkbox('Logarithmic Scale:')
 
 for graph in desired_graphs:
     st.plotly_chart(graphs_dict[graph](rents_df,colors,log_scale))
