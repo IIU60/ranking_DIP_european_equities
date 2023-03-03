@@ -27,17 +27,16 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
 def rank_data(pivoted_df, n_quantiles, type_=['alto','bajo']):
     
     ranks_list = []
-    labels = range(1,11) if type_=='alto' else (range(10,0,-1) if type_ == 'bajo' else 'null')
+    labels = range(1,n_quantiles+1) if type_=='bajo' else (range(n_quantiles,0,-1) if type_ == 'alto' else 'null')
 
-    #### decil 0 tiene los valores mas bajos y el 9 los mas altos ####
     for row in pivoted_df.values:
         ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
     
-    return pd.DataFrame(np.array(ranks_list), index=pivoted_df.index, columns=pivoted_df.columns),labels
+    return pd.DataFrame(np.array(ranks_list), index=pivoted_df.index, columns=pivoted_df.columns)
 
 
 @st.cache_data
-def get_rents_df(ranked_df, prices_csv_filepath, labels):
+def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
 
     precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
 
@@ -52,9 +51,9 @@ def get_rents_df(ranked_df, prices_csv_filepath, labels):
         pass
 
     rentabilidad_acciones_df = precios_df.pct_change()
-
+    
     deciles_df = pd.DataFrame(columns = ['equiponderado'])
-    for i in labels:
+    for i in range(1,n_quantiles+1):
         rents_list = []
         for date,ranks in ranked_df.T.items():
             rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
@@ -72,13 +71,13 @@ def multi_factor_ranking(weights_df, data_dict, n_quantiles):
     ranked_data_dict = {}
     columns_list = []
     for factor,type_ in zip(weights_df.Factor,weights_df.Type):
-        ranked_data_dict[factor] = rank_data(data_dict[factor],n_quantiles, type_)[0]
-        columns_list.append(set(ranked_data_dict[factor].columns))
+        ranked_data = rank_data(data_dict[factor],n_quantiles, type_)
+        ranked_data_dict[factor] = ranked_data
+        columns_list.append(ranked_data.columns)
 
     common_columns = columns_list[0]
     for i in columns_list[1:]:
-        common_columns = common_columns & i
-    common_columns = list(common_columns)
+        common_columns = common_columns.intersection(i)
 
     weighted_df_dict = {}
     for factor,ranked_df in ranked_data_dict.items():
