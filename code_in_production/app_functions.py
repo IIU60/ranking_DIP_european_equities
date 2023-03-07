@@ -53,7 +53,7 @@ def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
     rentabilidad_acciones_df = precios_df.pct_change()
     
     deciles_df = pd.DataFrame(columns = ['equiponderado'])
-    for i in range(1,n_quantiles+1):
+    for i in range(1, n_quantiles+1):
         rents_list = []
         for date,ranks in ranked_df.T.items():
             rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
