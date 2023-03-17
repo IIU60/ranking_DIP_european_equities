@@ -23,6 +23,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
             bad_dfs[filename.strip('pivoted_').strip('.csv')] = df
     return good_dfs,bad_dfs
 
+
 @st.cache_data
 def rank_data(pivoted_df, n_quantiles, type_=['alto','bajo']):
     
@@ -36,32 +37,31 @@ def rank_data(pivoted_df, n_quantiles, type_=['alto','bajo']):
 
 
 @st.cache_data
-def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles):
+def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles, period):
 
-    precios_df = pd.read_csv(prices_csv_filepath,index_col='CallDate')
+    og_len = len(ranked_df)
 
-    extra_stocks = set(precios_df.columns)-set(ranked_df.columns)
+    prices_df = pd.read_csv(prices_csv_filepath,index_col=0).sort_index()
 
-    ranked_df = ranked_df.loc[:,list(set(precios_df.columns)-extra_stocks)]
-    precios_df = precios_df.loc[:,ranked_df.columns]
+    extra_stocks = set(prices_df.columns)-set(ranked_df.columns)
+    ranked_df = ranked_df.loc[:,list(set(prices_df.columns)-extra_stocks)]
+    prices_df = prices_df.loc[:,ranked_df.columns]
 
-    try:
-        ranked_df.drop(index='2000-01-01',inplace=True)
-    except KeyError:
-        pass
+    ranked_df = ranked_df.shift(period)
+    ranked_df = ranked_df[period:]
 
-    rentabilidad_acciones_df = precios_df.pct_change()
-    
-    deciles_df = pd.DataFrame(columns = ['equiponderado'])
+    returns_df = prices_df.pct_change(period,limit=1)
+
+    quantiles_df = pd.DataFrame(columns=['equiponderado'])
     for i in range(1, n_quantiles+1):
-        rents_list = []
-        for date,ranks in ranked_df.T.items():
-            rents_list.append(rentabilidad_acciones_df.loc[date,ranks == i].mean())
-        deciles_df[f'decil_{i}'] = rents_list
-    deciles_df['equiponderado'] = deciles_df.mean(axis=1)
-    deciles_df = deciles_df.set_index(ranked_df.index)
-
-    return deciles_df
+        returns_list = []
+        for date,ranks in (ranked_df==i).T.items():
+            returns_list.append(returns_df.loc[date,ranks].mean(axis=0))
+        quantiles_df[f'decil_{i}'] = returns_list
+    quantiles_df['equiponderado'] = quantiles_df.mean(axis=1)
+    quantiles_df = quantiles_df.set_index(ranked_df.index)
+    quantiles_df.dropna(inplace=True)
+    return quantiles_df, len(quantiles_df)/og_len
 
 
 @st.cache_data

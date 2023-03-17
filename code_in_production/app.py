@@ -47,8 +47,8 @@ for i in range(n_indicators):
         type_of_indicator = st.selectbox('Type:', ['alto','bajo'],key=f'type_{i}')
         log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
         ranked_data = af.rank_data(st.session_state.clean_data_dict[selected_ratio], n_quantiles, type_of_indicator)
-        rents_df = af.get_rents_df(ranked_data, prices_csv_filepath,n_quantiles)
-
+        rents_df,n = af.get_rents_df(ranked_data, prices_csv_filepath,n_quantiles,1)
+        st.write(n)
         graphs_dict = {
             'NAV Absoluto': pl.plot_NAV_absoluto,
             'NAV Relativo a Equiponderado': pl.plot_NAV_relativo,
@@ -60,4 +60,4 @@ for i in range(n_indicators):
         desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys(),key=f'desired_graphs_{i}')
        
         for graph in desired_graphs:
-            st.plotly_chart(graphs_dict[graph](rents_df, selected_ratio, log_scale),True)
+            st.plotly_chart(graphs_dict[graph](rents_df, selected_ratio, log_scale=log_scale),True)
