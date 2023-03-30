@@ -25,32 +25,39 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
 
 
 @st.cache_data
-def rank_data(pivoted_df, n_quantiles, type_=['alto','bajo']):
-    
-    ranks_list = []
-    labels = range(1,n_quantiles+1) if type_=='bajo' else (range(n_quantiles,0,-1) if type_ == 'alto' else 'null')
+def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
 
-    for row in pivoted_df.values:
-        ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
-    
-    return pd.DataFrame(np.array(ranks_list), index=pivoted_df.index, columns=pivoted_df.columns)
+    df = df.astype(float)
+    df = df.replace(to_replace=0,value=np.nan) # This was put in place to allow binning of rows with many 0s (duplicates in pct_change) - should be changed to something universal or dropped (not all rows which cannot be binned will be like so because of too many 0s. RSI for does this with 100s)
+    df = df.dropna(how='all',axis=0).dropna(how='all',axis=1)
+
+    ranks_list = []
+    failed_to_rank = []
+    labels = range(1,n_quantiles+1) if type_=='bajo' else (range(n_quantiles,0,-1) if type_ == 'alto' else None)
+
+    for i, row in enumerate(df.values):
+        try:
+            ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
+        except ValueError:
+            print(i)
+            failed_to_rank.append(i)
+    return pd.DataFrame(np.array(ranks_list), index=df.index.delete(failed_to_rank), columns=df.columns)
 
 
 @st.cache_data
-def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles, period):
+def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
 
     og_len = len(ranked_df)
+    ranked_df = ranked_df.sort_index()
+    prices_df = prices_df.sort_index()
 
-    prices_df = pd.read_csv(prices_csv_filepath,index_col=0).sort_index()
+    common_stocks = list(set(prices_df.columns) & set(ranked_df.columns))
+    ranked_df = ranked_df.loc[:,common_stocks]
+    prices_df = prices_df.loc[:,common_stocks]
 
-    extra_stocks = set(prices_df.columns)-set(ranked_df.columns)
-    ranked_df = ranked_df.loc[:,list(set(prices_df.columns)-extra_stocks)]
-    prices_df = prices_df.loc[:,ranked_df.columns]
+    ranked_df = ranked_df.shift(shift_period)[shift_period:]
 
-    ranked_df = ranked_df.shift(period)
-    ranked_df = ranked_df[period:]
-
-    returns_df = prices_df.pct_change(period,limit=1)
+    returns_df = prices_df.pct_change(rets_period,limit=1)
 
     quantiles_df = pd.DataFrame(columns=['equiponderado'])
     for i in range(1, n_quantiles+1):
@@ -59,8 +66,10 @@ def get_rents_df(ranked_df, prices_csv_filepath, n_quantiles, period):
             returns_list.append(returns_df.loc[date,ranks].mean(axis=0))
         quantiles_df[f'decil_{i}'] = returns_list
     quantiles_df['equiponderado'] = quantiles_df.mean(axis=1)
+    
     quantiles_df = quantiles_df.set_index(ranked_df.index)
-    quantiles_df.dropna(inplace=True)
+    #quantiles_df.dropna(inplace=True)
+
     return quantiles_df, len(quantiles_df)/og_len
 
 

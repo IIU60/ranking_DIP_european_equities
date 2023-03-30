@@ -38,6 +38,8 @@ with st.sidebar:
 
 n_indicators = st.number_input('Number of Indicators:',value=1)
 
+prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0) # add to session state
+
 cols = st.columns(n_indicators)
 for i in range(n_indicators):
     with cols[i]:
@@ -47,7 +49,7 @@ for i in range(n_indicators):
         type_of_indicator = st.selectbox('Type:', ['alto','bajo'],key=f'type_{i}')
         log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
         ranked_data = af.rank_data(st.session_state.clean_data_dict[selected_ratio], n_quantiles, type_of_indicator)
-        rents_df,n = af.get_rents_df(ranked_data, prices_csv_filepath,n_quantiles,1)
+        rents_df,n = af.get_rents_df(ranked_data, prices_df, n_quantiles, 1,1)
         st.write(n)
         graphs_dict = {
             'NAV Absoluto': pl.plot_NAV_absoluto,
