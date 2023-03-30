@@ -28,13 +28,27 @@ def create_dates_list(type_=['days','months'], start_date=(2000,1,1), end_date=(
             i +=1
     
     if only_weekdays==True:
-        weekday0 = dates[0].weekday()
-        saturdays = dates[5-weekday0::7]
-        sundays = dates[6-weekday0::7]
-        dates = set(dates) - set(saturdays) - set(sundays)
-        dates = sorted(list(dates))
+        if type_=='days':
+            weekday0 = dates[0].weekday()
+            saturdays = dates[5-weekday0::7]
+            sundays = dates[6-weekday0::7]
+            dates = set(dates) - set(saturdays) - set(sundays)
+            dates = sorted(list(dates))
+        else:
+            raise ValueError('can only calculate weekdays if type_ is daily')
 
     if as_str==True:
         return list(map(str,dates))
     
     return dates
+
+def apply_mask(df,mask=None,mask_fp=None):
+    if mask is None:
+        if mask_fp is None:
+            raise ValueError("Either 'mask' or 'mask_fp' must be provided.")
+        mask = pd.read_csv(mask_fp, index_col=0)
+    common_columns = sorted(list(set(df.columns) & set(mask.columns)))
+    common_rows = sorted(list(set(df.index) & set(mask.index)))
+    df = df.loc[common_rows,common_columns]
+    mask = mask.loc[common_rows,common_columns]
+    return df.where(mask)
