@@ -47,7 +47,7 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
 @st.cache_data
 def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
 
-    og_len = len(ranked_df)
+    #og_len = len(ranked_df)
     ranked_df = ranked_df.sort_index()
     prices_df = prices_df.sort_index()
 
@@ -70,7 +70,7 @@ def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int
     quantiles_df = quantiles_df.set_index(ranked_df.index)
     #quantiles_df.dropna(inplace=True)
 
-    return quantiles_df, len(quantiles_df)/og_len
+    return quantiles_df # , len(quantiles_df)/og_len
 
 
 @st.cache_data

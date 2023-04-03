@@ -2,7 +2,10 @@ import streamlit as st
 import app_functions as af
 import plots as pl
 import pandas as pd
+import custom_calculations as calcs
 
+
+#import matplotlib.pyplot as plt
 st.set_page_config(layout='wide')
 st.title('Stoxx600 Equities Dashboard')
 
@@ -16,23 +19,46 @@ with st.sidebar:
         init_form_button = st.form_submit_button()
 
     if 'clean_data_dict' not in st.session_state:
-        st.session_state.clean_data_dict = af.filter_data(data_directory_filepath,min_stocks_per_date_ratio,min_total_dates_ratio)[0]
+        st.session_state.clean_data_dict = af.filter_data(data_directory_filepath,min_stocks_per_date_ratio,min_total_dates_ratio)[0]    
+ 
+    if 'create_weighted_indicator' not in st.session_state:
+        st.session_state.create_weighted_indicator = False
+    
+    if st.button('Create Multi-factor Indicator'):
+        st.session_state.create_weighted_indicator = True
+    
+    if st.session_state.create_weighted_indicator == True:
+        with st.form('weighted_indicator_form'):
+            indicator_name = st.text_input('Indicator Name:')
+            weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),num_rows='dynamic',width=600)
+            weighted_indicator_form_button = st.form_submit_button()
+        
+        if weighted_indicator_form_button:
+            st.success('Created Successfully')
+            weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
+            st.session_state.clean_data_dict[indicator_name] = weighted_indicator_df
+            st.session_state.create_weighted_indicator = False
+            st.experimental_rerun()
+
+
     if 'create_custom_indicator' not in st.session_state:
         st.session_state.create_custom_indicator = False
 
-    if st.button('Create Multi-factor Indicator'):
+    if st.button('Create Custom Indicator'):
         st.session_state.create_custom_indicator = True
 
     if st.session_state.create_custom_indicator == True:
         with st.form('custom_indicator_form'):
             indicator_name = st.text_input('Indicator Name:')
-            custom_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),num_rows='dynamic',width=600)
+            user_input = st.text_input('Formula:')
             custom_indicator_form_button = st.form_submit_button()
         
         if custom_indicator_form_button:
-            st.success('Created Successfully')
-            custom_indicator_df = af.multi_factor_ranking(custom_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
-            st.session_state.clean_data_dict[indicator_name] = custom_indicator_df
+            locals_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__')}
+            locals_dict.update(st.session_state.clean_data_dict)
+            st.write(locals_dict) # write docs to screen
+            custom_df = eval(user_input,{},locals_dict)
+            st.session_state.clean_data_dict[indicator_name] = custom_df
             st.session_state.create_custom_indicator = False
             st.experimental_rerun()
 
@@ -49,8 +75,14 @@ for i in range(n_indicators):
         type_of_indicator = st.selectbox('Type:', ['alto','bajo'],key=f'type_{i}')
         log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
         ranked_data = af.rank_data(st.session_state.clean_data_dict[selected_ratio], n_quantiles, type_of_indicator)
-        rents_df,n = af.get_rents_df(ranked_data, prices_df, n_quantiles, 1,1)
-        st.write(n)
+        #fig,ax = plt.subplots()
+        #ax.plot(st.session_state.clean_data_dict[selected_ratio].notna().sum(axis=1))
+        #st.pyplot(fig)
+        #fig,ax = plt.subplots()
+        #ax.plot(ranked_data.notna().sum(axis=1))
+        #st.pyplot(fig)
+        rents_df = af.get_rents_df(ranked_data, prices_df, n_quantiles, 1,1)
+        st.write(len(rents_df)/277)
         graphs_dict = {
             'NAV Absoluto': pl.plot_NAV_absoluto,
             'NAV Relativo a Equiponderado': pl.plot_NAV_relativo,
@@ -63,3 +95,4 @@ for i in range(n_indicators):
        
         for graph in desired_graphs:
             st.plotly_chart(graphs_dict[graph](rents_df, selected_ratio, log_scale=log_scale),True)
+
