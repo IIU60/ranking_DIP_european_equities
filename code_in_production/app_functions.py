@@ -47,7 +47,6 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
 @st.cache_data
 def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
 
-    #og_len = len(ranked_df)
     ranked_df = ranked_df.sort_index()
     prices_df = prices_df.sort_index()
 
@@ -68,9 +67,8 @@ def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int
     quantiles_df['equiponderado'] = quantiles_df.mean(axis=1)
     
     quantiles_df = quantiles_df.set_index(ranked_df.index)
-    #quantiles_df.dropna(inplace=True)
 
-    return quantiles_df # , len(quantiles_df)/og_len
+    return quantiles_df
 
 
 @st.cache_data
@@ -106,3 +104,16 @@ def multi_factor_ranking(weights_df, data_dict, n_quantiles):
         final_df_list.append(sum(summing_list)/len(summing_list))
 
     return pd.DataFrame(final_df_list)
+
+
+@st.cache_data
+def apply_mask(df,mask=None,mask_fp=None):
+    if mask is None:
+        if mask_fp is None:
+            raise ValueError("Either 'mask' or 'mask_fp' must be provided.")
+        mask = pd.read_csv(mask_fp, index_col=0)
+    common_columns = sorted(list(set(df.columns) & set(mask.columns)))
+    common_rows = sorted(list(set(df.index) & set(mask.index)))
+    df = df.loc[common_rows,common_columns]
+    mask = mask.loc[common_rows,common_columns]
+    return df.where(mask)
