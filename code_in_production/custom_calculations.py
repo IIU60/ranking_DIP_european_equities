@@ -1,7 +1,7 @@
 import pandas as pd
 import ta
 
-import utils # figure out best way to apply mask to calculations
+from app_functions import apply_mask # figure out best way to apply mask to calculations
 
 def rate_of_change(df:pd.DataFrame,period:int):
     pct_change_df = df.pct_change(period,limit=1)
@@ -25,7 +25,7 @@ def exponential_ma(df:pd.DataFrame, rolling_window):
 
 def beta(monthly_prices:pd.DataFrame, monthly_mask:pd.DataFrame, window_size_months:int):
 
-    masked_monthly_prices = utils.apply_mask(monthly_prices,monthly_mask) # should probably pass masked monthly prices directly instead of calculating inside the function
+    masked_monthly_prices = apply_mask(monthly_prices,monthly_mask) # should probably pass masked monthly prices directly instead of calculating inside the function
     market = masked_monthly_prices.mean(axis=1)
 
     window = window_size_months # Rolling window size in months
