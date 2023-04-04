@@ -3,19 +3,13 @@ import datetime as dt
 import dateutil.relativedelta
 import tqdm
 import pandas as pd
+import utils
 
 def get_data(fields:list,desired_field_name:str):
     
     ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
 
-    start_date = dt.date(2000,1,1)
-    end_date = dt.date(2023,1,1)
-    dates = [start_date]
-    i = 0
-    while (dates[0] + dateutil.relativedelta.relativedelta(months=i+1)) <= end_date:
-        dates.append(dates[0] + dateutil.relativedelta.relativedelta(months=i+1))
-        i += 1
-    str_dates = list(map(str,dates))
+    str_dates = utils.create_dates_list('months',as_str=True)
 
     complete_df = pd.DataFrame(columns=['Instrument','Date','CallDate'])
 
