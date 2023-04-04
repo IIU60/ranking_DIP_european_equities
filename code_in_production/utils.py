@@ -41,14 +41,3 @@ def create_dates_list(type_=['days','months'], start_date=(2000,1,1), end_date=(
         return list(map(str,dates))
     
     return dates
-
-def apply_mask(df,mask=None,mask_fp=None):
-    if mask is None:
-        if mask_fp is None:
-            raise ValueError("Either 'mask' or 'mask_fp' must be provided.")
-        mask = pd.read_csv(mask_fp, index_col=0)
-    common_columns = sorted(list(set(df.columns) & set(mask.columns)))
-    common_rows = sorted(list(set(df.index) & set(mask.index)))
-    df = df.loc[common_rows,common_columns]
-    mask = mask.loc[common_rows,common_columns]
-    return df.where(mask)
