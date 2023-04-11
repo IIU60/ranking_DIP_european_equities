@@ -22,19 +22,19 @@ def exponential_ma(df:pd.DataFrame, rolling_window):
     ema_df = df.ewm(span=rolling_window).mean()
     return ema_df
 
+mask = None
+def beta(df:pd.DataFrame, window_size_months:int):
 
-def beta(monthly_prices:pd.DataFrame, monthly_mask:pd.DataFrame, window_size_months:int):
+    global mask # be very careful
 
-    masked_monthly_prices = apply_mask(monthly_prices,monthly_mask) # should probably pass masked monthly prices directly instead of calculating inside the function
+    masked_monthly_prices = apply_mask(df,mask) # mask is a global variable that must be defined in the app or globals dict of the eval function: calcs.mask = mask
     market = masked_monthly_prices.mean(axis=1)
-
-    window = window_size_months # Rolling window size in months
     
-    df = monthly_prices.pct_change(limit=1) # Calculate monthly returns
+    returns = df.pct_change(limit=1) # Calculate monthly returns
     market_returns = market.pct_change(limit=1)
 
-    covariance = df.rolling(window).cov(market_returns) # Calculate rolling covariance with market
-    variance = market_returns.rolling(window).var() # Calculate rolling variance of market
+    covariance = returns.rolling(window_size_months).cov(market_returns) # Calculate rolling covariance with market
+    variance = market_returns.rolling(window_size_months).var() # Calculate rolling variance of market
 
     beta = covariance.div(variance,axis=0) # Calculate rolling beta
     return beta

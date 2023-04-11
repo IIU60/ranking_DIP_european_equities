@@ -60,11 +60,12 @@ with st.sidebar:
             indicator_name = st.text_input('Indicator Name:')
             user_input = st.text_input('Formula:')
             custom_indicator_form_button = st.form_submit_button()
-        
-        if custom_indicator_form_button:
+            calcs.mask = st.session_state.mask
             locals_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__')}
             locals_dict.update(st.session_state.clean_data_dict)
-            st.write(locals_dict) # write docs to screen
+            st.write(locals_dict.keys()) # write docs to screen
+        
+        if custom_indicator_form_button:
             custom_df = eval(user_input,{},locals_dict)
             st.session_state.clean_data_dict[indicator_name] = custom_df
             st.session_state.create_custom_indicator = False
