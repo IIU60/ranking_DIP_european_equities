@@ -25,7 +25,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
 
 
 @st.cache_data
-def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
+def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
 
     df = df.astype(float)
     df = df.replace(to_replace=0,value=np.nan) # This was put in place to allow binning of rows with many 0s (duplicates in pct_change) - should be changed to something universal or dropped (not all rows which cannot be binned will be like so because of too many 0s. RSI for does this with 100s)
@@ -33,8 +33,9 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
 
     ranks_list = []
     failed_to_rank = []
-    labels = range(1,n_quantiles+1) if type_=='bajo' else (range(n_quantiles,0,-1) if type_ == 'alto' else None)
-
+    labels = range(1,n_quantiles+1) if type_=='low' else (range(n_quantiles,0,-1) if type_ == 'high' else None)
+    if labels==None:
+        raise ValueError('Type must be either "high" or "low"')
     for i, row in enumerate(df.values):
         try:
             ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
@@ -45,7 +46,7 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['alto','bajo']):
 
 
 @st.cache_data
-def get_rents_df(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
+def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
 
     ranked_df = ranked_df.sort_index()
     prices_df = prices_df.sort_index()

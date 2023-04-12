@@ -13,9 +13,9 @@ with st.sidebar:
         n_quantiles = st.number_input('Number of Quantiles:', min_value=1, value=10)
         min_stocks_per_date_ratio = st.number_input('Minimum stocks per date ratio:', min_value=0.0, max_value=1.0, value=0.8)
         min_total_dates_ratio = st.number_input('Minimum total dates ratio:', min_value=0.0, max_value=1.0, value=0.8)
-        data_directory_filepath = st.text_input('Filepath to data directory:', value=r'C:\Users\hugo.perezdealbeniz\Desktop\Ranking DIP European Equities\ReutersEikon\data\vertical_dowload_files')
-        prices_csv_filepath = st.text_input('Filepath to prices csv:', value=r'C:\Users\hugo.perezdealbeniz\Desktop\Ranking DIP European Equities\ReutersEikon\data\vertical_dowload_files\PriceClose.csv')
-        mask_filepath = st.text_input('Filepath to index constituency mask:', value=r'C:\Users\hugo.perezdealbeniz\Desktop\Ranking DIP European Equities\ReutersEikon\data\PriceClose_vertical\monthly_constituents_filter.csv')
+        data_directory_filepath = st.text_input('Filepath to data directory:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files')
+        prices_csv_filepath = st.text_input('Filepath to prices csv:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files\PriceClose.csv')
+        mask_filepath = st.text_input('Filepath to index constituency mask:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\PriceClose_vertical\monthly_constituents_filter.csv')
         init_form_button = st.form_submit_button()
 
     if 'start_app' not in st.session_state:
@@ -45,7 +45,6 @@ with st.sidebar:
             weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
             st.session_state.clean_data_dict[indicator_name] = weighted_indicator_df
             st.session_state.create_weighted_indicator = False
-            st.experimental_rerun()
 
 
     if 'create_custom_indicator' not in st.session_state:
@@ -75,7 +74,6 @@ with st.sidebar:
             custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
             st.session_state.clean_data_dict[indicator_name] = custom_df
             st.session_state.create_custom_indicator = False
-            st.experimental_rerun()
 
 
 if st.session_state.start_app == True:
@@ -87,15 +85,13 @@ if st.session_state.start_app == True:
             
             selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys(),key=f'ratio_{i}')
             
-            type_of_indicator = st.selectbox('Type:', ['alto','bajo'],key=f'type_{i}')
+            type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
             log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
             masked_data = af.apply_mask(st.session_state.clean_data_dict[selected_ratio],st.session_state.mask)
             ranked_data = af.rank_data(masked_data, n_quantiles, type_of_indicator)
-            #fig,ax = plt.subplots()
-            #ax.plot(ranked_data.notna().sum(axis=1))
-            #st.pyplot(fig)
-            rents_df = af.get_rents_df(ranked_data, st.session_state.prices_df, n_quantiles,1,1)
-            st.write(len(rents_df)/277)
+            
+            returns_df = af.get_returns(ranked_data, st.session_state.prices_df, n_quantiles,1,1)
+            #st.write(len(returns_df)/277)
             graphs_dict = {
                 'NAV Absoluto': pl.plot_NAV_absoluto,
                 'NAV Relativo a Equiponderado': pl.plot_NAV_relativo,
@@ -107,7 +103,7 @@ if st.session_state.start_app == True:
             desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys(),key=f'desired_graphs_{i}')
         
             for graph in desired_graphs:
-                st.plotly_chart(graphs_dict[graph](rents_df, selected_ratio, log_scale=log_scale),True)
+                st.plotly_chart(graphs_dict[graph](returns_df, selected_ratio, log_scale=log_scale),True)
 
 else:
     st.warning('Please Submit the data and params form in the sidebar to load the app.')
