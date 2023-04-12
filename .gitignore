@@ -1,5 +1,7 @@
 **/data
 *.csv
 *.xlsx
+*.xlsm
+*.json
 
 **/__pycache__
