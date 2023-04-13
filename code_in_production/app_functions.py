@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import streamlit as st
+from  warnings import warn
 
 
 @st.cache_data
@@ -119,7 +120,8 @@ def multi_factor_ranking(weights_df, data_dict, n_quantiles):
 def apply_mask(df,mask=None,mask_fp=None):
     if mask is None:
         if mask_fp is None:
-            raise ValueError("Either 'mask' or 'mask_fp' must be provided.")
+            warn("No mask was provided.")
+            return df
         mask = pd.read_csv(mask_fp, index_col=0)
     common_columns = sorted(list(set(df.columns) & set(mask.columns)))
     common_rows = sorted(list(set(df.index) & set(mask.index)))
