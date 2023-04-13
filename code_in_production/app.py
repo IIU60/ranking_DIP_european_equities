@@ -9,8 +9,6 @@ st.title('Stoxx600 Equities Dashboard')
 
 if 'start_app' not in st.session_state:
     st.session_state.start_app = False
-if 'mask' not in st.session_state:
-    st.session_state.mask = None
 
 with st.sidebar:
 
@@ -27,9 +25,10 @@ with st.sidebar:
         
     if init_form_button:
         st.session_state.prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0)
-        if mask_filepath != 'None':
+        if mask_filepath == 'None':
+            st.session_state.mask = None
+        else:
             st.session_state.mask = pd.read_csv(fr'{mask_filepath}',index_col=0)
-        #if st.session_state.data_fp != data_directory_filepath: ## Trying to only run on change of input
         st.session_state.clean_data_dict,st.session_state.bad_dfs = af.filter_data(
             fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
         st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
@@ -44,13 +43,13 @@ with st.sidebar:
     
     if st.session_state.create_weighted_indicator == True:
         with st.form('weighted_indicator_form'):
-            indicator_name = st.text_input('Indicator Name:')
+            weighted_indicator_name = st.text_input('Indicator Name:')
             weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
             weighted_indicator_form_button = st.form_submit_button()
         
         if weighted_indicator_form_button:
             weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
-            st.session_state.clean_data_dict[indicator_name] = weighted_indicator_df
+            st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
             st.success('Created Successfully')
             st.session_state.create_weighted_indicator = False
 
@@ -63,9 +62,10 @@ with st.sidebar:
 
     if st.session_state.create_custom_indicator == True:
         with st.form('custom_indicator_form'):
-            indicator_name = st.text_input('Indicator Name:')
+            custom_indicator_name = st.text_input('Indicator Name:')
             user_input = st.text_input('Formula:')
             custom_indicator_form_button = st.form_submit_button()
+            
             calcs.mask = st.session_state.mask
             calcs_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__') and k not in ['ta','pd','apply_mask','mask']}
             locals_dict = calcs_dict.copy()
@@ -76,14 +76,28 @@ with st.sidebar:
                 for key, value in docstrings.items():
                     st.markdown(f"**{key}**")
                     st.markdown(value)    
-        
             
         if custom_indicator_form_button:
             custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
-            st.session_state.clean_data_dict[indicator_name] = custom_df
+            st.session_state.clean_data_dict[custom_indicator_name] = custom_df
             st.success('Created Successfully')
             st.session_state.create_custom_indicator = False
 
+
+    if 'download_indicator' not in st.session_state:
+        st.session_state.download_indicator = False
+
+    if st.button('Download Indicator'):
+        st.session_state.download_indicator = True
+
+    if st.session_state.download_indicator == True:
+        with st.form('download_indicator_form'):
+            indicator_to_download = st.selectbox('Indicators:',options=st.session_state.clean_data_dict.keys())
+            download_indicator_name = st.text_input('Name:',value=indicator_to_download)
+            download_indicator_form_button = st.form_submit_button('Download')
+    
+        if download_indicator_form_button:
+            st.session_state.clean_data_dict[indicator_to_download].to_csv(f'{data_directory_filepath}\{download_indicator_name}.csv')
 
 if st.session_state.start_app == True:
     n_indicators = st.number_input('Number of Indicators:',value=1)
@@ -94,13 +108,16 @@ if st.session_state.start_app == True:
             selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys(),key=f'ratio_{i}')
             type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
             log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
-
+            notna_graph = st.checkbox('Show Non-missing Values Graph',key=f'notna_graph_{i}')
+            
             print(selected_ratio)
             masked_data = af.apply_mask(st.session_state.clean_data_dict[selected_ratio],st.session_state.mask)
             ranked_data = af.rank_data(masked_data, n_quantiles, type_of_indicator)
             returns_df = af.get_returns(ranked_data, st.session_state.prices_df, n_quantiles,1,1)
-            #st.write(len(returns_df)/277)
-            #st.plotly_chart(pl.notna_plot(ranked_data))
+            
+            if notna_graph:
+                st.write(len(returns_df)/277)
+                st.plotly_chart(pl.notna_plot(ranked_data),True)
             graphs_dict = {
                 'NAV Absoluto': pl.plot_NAV_absoluto,
                 'NAV Relativo a Equiponderado': pl.plot_NAV_relativo,
