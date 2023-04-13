@@ -4,6 +4,12 @@ import plotly.express as px
 import streamlit as st
 
 colors = ['#000000'] + px.colors.diverging.RdYlGn_r [::]
+config = {
+  'toImageButtonOptions': { 'height': None, 
+                           'width': None, 
+                           'format':'png',
+                           'scale': 1}
+}
 
 ANUALISING_PERIOD = 12
 

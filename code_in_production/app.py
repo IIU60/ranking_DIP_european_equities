@@ -129,7 +129,7 @@ if st.session_state.start_app == True:
             desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys(),key=f'desired_graphs_{i}')
         
             for graph in desired_graphs:
-                st.plotly_chart(graphs_dict[graph](returns_df, selected_ratio, log_scale=log_scale),True)
+                st.plotly_chart(graphs_dict[graph](returns_df, selected_ratio, log_scale=log_scale),True,config=pl.config)
 
 else:
     st.warning('Please Submit the data and params form in the sidebar to load the app.')
