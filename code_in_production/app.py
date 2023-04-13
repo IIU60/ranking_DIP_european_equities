@@ -7,27 +7,35 @@ import custom_calculations as calcs
 st.set_page_config(layout='wide')
 st.title('Stoxx600 Equities Dashboard')
 
+if 'start_app' not in st.session_state:
+    st.session_state.start_app = False
+if 'mask' not in st.session_state:
+    st.session_state.mask = None
+
 with st.sidebar:
 
     with st.form(key='initial_params_form'):
         n_quantiles = st.number_input('Number of Quantiles:', min_value=1, value=10)
         min_stocks_per_date_ratio = st.number_input('Minimum stocks per date ratio:', min_value=0.0, max_value=1.0, value=0.8)
         min_total_dates_ratio = st.number_input('Minimum total dates ratio:', min_value=0.0, max_value=1.0, value=0.8)
-        data_directory_filepath = st.text_input('Filepath to data directory:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files')
-        prices_csv_filepath = st.text_input('Filepath to prices csv:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files\PriceClose.csv')
-        mask_filepath = st.text_input('Filepath to index constituency mask:', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\PriceClose_vertical\monthly_constituents_filter.csv')
+        data_directory_filepath = st.text_input('Filepath to data directory:',key='data_fp', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files')
+        prices_csv_filepath = st.text_input('Filepath to prices csv:',key='prices_fp', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\vertical_dowload_files\PriceClose.csv')
+        with st.expander('Index Constituency Filtering'):
+            mask_filepath = st.text_input('Filepath to index constituency mask:',key='mask_fp', value=r'Z:\Interés Departamental\Model Portfolio\Hugo\Ranking DIP European Equities\copia 12-04-2023\data\PriceClose_vertical\monthly_constituents_filter.csv')
+            expected_stocks_per_date = st.number_input('Expexted stocks per date:',value=600,min_value=0)
         init_form_button = st.form_submit_button()
-
-    if 'start_app' not in st.session_state:
-        st.session_state.start_app = False
         
     if init_form_button:
-        st.session_state.clean_data_dict = af.filter_data(fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio)[0]
         st.session_state.prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0)
-        st.session_state.mask = pd.read_csv(fr'{mask_filepath}',index_col=0)
+        if mask_filepath != 'None':
+            st.session_state.mask = pd.read_csv(fr'{mask_filepath}',index_col=0)
+        #if st.session_state.data_fp != data_directory_filepath: ## Trying to only run on change of input
+        st.session_state.clean_data_dict,st.session_state.bad_dfs = af.filter_data(
+            fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
+        st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
         st.session_state.start_app = True
         
- 
+
     if 'create_weighted_indicator' not in st.session_state:
         st.session_state.create_weighted_indicator = False
     
@@ -37,13 +45,13 @@ with st.sidebar:
     if st.session_state.create_weighted_indicator == True:
         with st.form('weighted_indicator_form'):
             indicator_name = st.text_input('Indicator Name:')
-            weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),num_rows='dynamic',width=600)
+            weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
             weighted_indicator_form_button = st.form_submit_button()
         
         if weighted_indicator_form_button:
-            st.success('Created Successfully')
             weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
             st.session_state.clean_data_dict[indicator_name] = weighted_indicator_df
+            st.success('Created Successfully')
             st.session_state.create_weighted_indicator = False
 
 
@@ -73,6 +81,7 @@ with st.sidebar:
         if custom_indicator_form_button:
             custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
             st.session_state.clean_data_dict[indicator_name] = custom_df
+            st.success('Created Successfully')
             st.session_state.create_custom_indicator = False
 
 
@@ -82,16 +91,16 @@ if st.session_state.start_app == True:
     cols = st.columns(n_indicators)
     for i in range(n_indicators):
         with cols[i]:
-            
             selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys(),key=f'ratio_{i}')
-            
             type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
             log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
+
+            print(selected_ratio)
             masked_data = af.apply_mask(st.session_state.clean_data_dict[selected_ratio],st.session_state.mask)
             ranked_data = af.rank_data(masked_data, n_quantiles, type_of_indicator)
-            
             returns_df = af.get_returns(ranked_data, st.session_state.prices_df, n_quantiles,1,1)
             #st.write(len(returns_df)/277)
+            #st.plotly_chart(pl.notna_plot(ranked_data))
             graphs_dict = {
                 'NAV Absoluto': pl.plot_NAV_absoluto,
                 'NAV Relativo a Equiponderado': pl.plot_NAV_relativo,
