@@ -5,22 +5,29 @@ import streamlit as st
 
 
 @st.cache_data
-def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8):
+def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8,expected_stocks_per_date=None,mask=None):
     
     good_dfs = {}
     bad_dfs = {}
     
     for filename in os.listdir(pivoted_data_directory_filepath):
+
         filepath = os.path.join(pivoted_data_directory_filepath,filename)
         df = pd.read_csv(filepath,index_col=0)
         len_input = len(df)
-        df = df.dropna(axis=0,how='all').dropna(axis=1,how='all')
-        df = df.loc[(df.notna().sum(axis=1)/600)>min_stocks_per_date_ratio]
-        maintained_dates_ratio = len(df)/len_input
+        
+        masked_df = apply_mask(df,mask)
+ 
+        masked_df = masked_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
+        masked_df = masked_df.loc[(masked_df.notna().sum(axis=1)/expected_stocks_per_date)>min_stocks_per_date_ratio]
+        
+        maintained_dates_ratio = len(masked_df)/len_input
+        
         if maintained_dates_ratio > min_total_dates_ratio:
-            good_dfs[filename.strip('pivoted_').strip('.csv')] = df
+            good_dfs[filename.split('.')[0]] = df
         else:
-            bad_dfs[filename.strip('pivoted_').strip('.csv')] = df
+            bad_dfs[f"{filename.split('.')[0]}: {maintained_dates_ratio}"] = df
+    
     return good_dfs,bad_dfs
 
 
@@ -28,7 +35,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
 def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
 
     df = df.astype(float)
-    df = df.replace(to_replace=0,value=np.nan) # This was put in place to allow binning of rows with many 0s (duplicates in pct_change) - should be changed to something universal or dropped (not all rows which cannot be binned will be like so because of too many 0s. RSI for does this with 100s)
+    df = df.replace(to_replace=0,value=np.nan) # This was put in place to allow binning of rows with many 0s (duplicates in pct_change) - should be changed to something universal or dropped (not all rows which cannot be binned will be like so because of too many 0s. RSI for example does this with 100s)
     df = df.dropna(how='all',axis=0).dropna(how='all',axis=1)
 
     ranks_list = []
@@ -36,12 +43,13 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
     labels = range(1,n_quantiles+1) if type_=='low' else (range(n_quantiles,0,-1) if type_ == 'high' else None)
     if labels==None:
         raise ValueError('Type must be either "high" or "low"')
+    
     for i, row in enumerate(df.values):
         try:
             ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
         except ValueError:
-            print(i)
             failed_to_rank.append(i)
+    print(failed_to_rank)
     return pd.DataFrame(np.array(ranks_list), index=df.index.delete(failed_to_rank), columns=df.columns)
 
 
