@@ -35,71 +35,76 @@ with st.sidebar:
         st.session_state.start_app = True
         
 
-    if 'create_weighted_indicator' not in st.session_state:
-        st.session_state.create_weighted_indicator = False
-    
-    if st.button('Create Multi-factor Indicator'):
-        st.session_state.create_weighted_indicator = True
-    
-    if st.session_state.create_weighted_indicator == True:
-        with st.form('weighted_indicator_form'):
-            weighted_indicator_name = st.text_input('Indicator Name:')
-            weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
-            weighted_indicator_form_button = st.form_submit_button()
-        
-        if weighted_indicator_form_button:
-            weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
-            st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
-            st.success('Created Successfully')
+if st.session_state.start_app == True:
+
+    with st.sidebar:
+        if 'create_weighted_indicator' not in st.session_state:
             st.session_state.create_weighted_indicator = False
-
-
-    if 'create_custom_indicator' not in st.session_state:
-        st.session_state.create_custom_indicator = False
-
-    if st.button('Create Custom Indicator'):
-        st.session_state.create_custom_indicator = True
-
-    if st.session_state.create_custom_indicator == True:
-        with st.form('custom_indicator_form'):
-            custom_indicator_name = st.text_input('Indicator Name:')
-            user_input = st.text_input('Formula:')
-            custom_indicator_form_button = st.form_submit_button()
+        
+        if st.button('Create Multi-factor Indicator'):
+            st.session_state.create_weighted_indicator = True
+        
+        if st.session_state.create_weighted_indicator == True:
+            with st.form('weighted_indicator_form'):
+                weighted_indicator_name = st.text_input('Indicator Name:')
+                weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
+                weighted_indicator_form_button = st.form_submit_button()
             
-            calcs.mask = st.session_state.mask
-            calcs_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__') and k not in ['ta','pd','apply_mask','mask']}
-            locals_dict = calcs_dict.copy()
-            locals_dict.update(st.session_state.clean_data_dict)
-            docstrings = {k:v.__doc__ for k, v in calcs_dict.items()}
-            
-            with st.expander('Available Functions documentation'):
-                for key, value in docstrings.items():
-                    st.markdown(f"**{key}**")
-                    st.markdown(value)    
-            
-        if custom_indicator_form_button:
-            custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
-            st.session_state.clean_data_dict[custom_indicator_name] = custom_df
-            st.success('Created Successfully')
+            if weighted_indicator_form_button:
+                weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
+                st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
+                st.success('Created Successfully')
+                st.session_state.create_weighted_indicator = False
+
+
+        if 'create_custom_indicator' not in st.session_state:
             st.session_state.create_custom_indicator = False
 
+        if st.button('Create Custom Indicator'):
+            st.session_state.create_custom_indicator = True
 
-    if 'download_indicator' not in st.session_state:
-        st.session_state.download_indicator = False
+        if st.session_state.create_custom_indicator == True:
+            with st.form('custom_indicator_form'):
+                custom_indicator_name = st.text_input('Indicator Name:')
+                user_input = st.text_input('Formula:')
+                custom_indicator_form_button = st.form_submit_button()
+                
+                calcs.mask = st.session_state.mask
+                calcs_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__') and k not in ['ta','pd','apply_mask','mask']}
+                locals_dict = calcs_dict.copy()
+                locals_dict.update(st.session_state.clean_data_dict)
+                docstrings = {k:v.__doc__ for k, v in calcs_dict.items()}
+                
+                with st.expander('Available Functions documentation'):
+                    for key, value in docstrings.items():
+                        st.markdown(f"**{key}**")
+                        st.markdown(value)    
+                
+            if custom_indicator_form_button:
+                custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
+                st.session_state.clean_data_dict[custom_indicator_name] = custom_df
+                st.success('Created Successfully')
+                st.session_state.create_custom_indicator = False
 
-    if st.button('Download Indicator'):
-        st.session_state.download_indicator = True
 
-    if st.session_state.download_indicator == True:
-        with st.form('download_indicator_form'):
-            indicator_to_download = st.selectbox('Indicators:',options=st.session_state.clean_data_dict.keys())
-            download_indicator_name = st.text_input('Name:',value=indicator_to_download)
-            download_indicator_form_button = st.form_submit_button('Download')
+        if 'download_indicator' not in st.session_state:
+            st.session_state.download_indicator = False
+
+        if st.button('Download Indicator'):
+            st.session_state.download_indicator = True
+
+        if st.session_state.download_indicator == True:
+            with st.form('download_indicator_form'):
+                indicator_to_download = st.selectbox('Indicators:',options=st.session_state.clean_data_dict.keys())
+                download_indicator_name = st.text_input('Name:',value=indicator_to_download)
+                download_indicator_form_button = st.form_submit_button('Download')
+        
+            if download_indicator_form_button:
+                st.session_state.clean_data_dict[indicator_to_download].to_csv(f'{data_directory_filepath}\{download_indicator_name}.csv')
+                st.success('Downloaded Successfully')
+                st.session_state.download_indicator = False
+
     
-        if download_indicator_form_button:
-            st.session_state.clean_data_dict[indicator_to_download].to_csv(f'{data_directory_filepath}\{download_indicator_name}.csv')
-
-if st.session_state.start_app == True:
     n_indicators = st.number_input('Number of Indicators:',value=1)
 
     cols = st.columns(n_indicators)
