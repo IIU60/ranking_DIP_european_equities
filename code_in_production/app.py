@@ -2,6 +2,7 @@ import streamlit as st
 import app_functions as af
 import plots as pl
 import pandas as pd
+import os
 import custom_calculations as calcs
 
 st.set_page_config(layout='wide')
@@ -24,7 +25,7 @@ with st.sidebar:
         init_form_button = st.form_submit_button()
         
     if init_form_button:
-        st.session_state.prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0)
+        st.session_state.prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0,sep=',')
         if mask_filepath == 'None':
             st.session_state.mask = None
         else:
@@ -51,7 +52,7 @@ if st.session_state.start_app == True:
                 weighted_indicator_form_button = st.form_submit_button()
             
             if weighted_indicator_form_button:
-                weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles)
+                weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles,st.session_state.mask)
                 st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
                 st.success('Created Successfully')
                 st.session_state.create_weighted_indicator = False
@@ -95,15 +96,17 @@ if st.session_state.start_app == True:
 
         if st.session_state.download_indicator == True:
             with st.form('download_indicator_form'):
-                indicator_to_download = st.selectbox('Indicators:',options=st.session_state.clean_data_dict.keys())
-                download_indicator_name = st.text_input('Name:',value=indicator_to_download)
+                indicator_to_download = st.selectbox('Indicator:',options=st.session_state.clean_data_dict.keys())
+                download_indicator_name = st.text_input('Name:')
                 download_indicator_form_button = st.form_submit_button('Download')
         
             if download_indicator_form_button:
-                st.session_state.clean_data_dict[indicator_to_download].to_csv(f'{data_directory_filepath}\{download_indicator_name}.csv')
+                if download_indicator_name+'.csv' in os.listdir(data_directory_filepath):
+                    st.warning(f'{download_indicator_name} was overwritten')
+                st.session_state.clean_data_dict[indicator_to_download].to_csv(fr'{data_directory_filepath}\{download_indicator_name}.csv')
                 st.success('Downloaded Successfully')
                 st.session_state.download_indicator = False
-
+            
     
     n_indicators = st.number_input('Number of Indicators:',value=1)
 
