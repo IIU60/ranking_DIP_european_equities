@@ -6,7 +6,7 @@ from  warnings import warn
 
 
 @st.cache_data
-def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, min_total_dates_ratio=0.8,expected_stocks_per_date=None,mask=None):
+def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, min_total_dates_ratio=0.0,expected_stocks_per_date=1,mask=None):
     
     good_dfs = {}
     bad_dfs = {}
@@ -14,9 +14,10 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.8, 
     for filename in os.listdir(pivoted_data_directory_filepath):
 
         filepath = os.path.join(pivoted_data_directory_filepath,filename)
-        df = pd.read_csv(filepath,index_col=0)
+        df = pd.read_csv(filepath,index_col=0,sep=',')
         len_input = len(df)
-        
+        if expected_stocks_per_date == 1:
+            expected_stocks_per_date = df.shape[1]
         masked_df = apply_mask(df,mask)
  
         masked_df = masked_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
@@ -57,8 +58,8 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
 @st.cache_data
 def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
 
-    ranked_df = ranked_df.sort_index()
-    prices_df = prices_df.sort_index()
+    ranked_df = ranked_df.set_index(pd.to_datetime(ranked_df.index)).sort_index()
+    prices_df = prices_df.set_index(pd.to_datetime(prices_df.index)).sort_index()
 
     common_stocks = list(set(prices_df.columns) & set(ranked_df.columns))
     ranked_df = ranked_df.loc[:,common_stocks]
@@ -82,14 +83,15 @@ def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int,
 
 
 @st.cache_data
-def multi_factor_ranking(weights_df, data_dict, n_quantiles):
+def multi_factor_ranking(weights_df:pd.DataFrame, data_dict:dict, n_quantiles:int,mask:pd.DataFrame):
 
     weights_df = weights_df.loc[weights_df.Weight > 0]
 
     ranked_data_dict = {}
     columns_list = []
     for factor,type_ in zip(weights_df.Factor,weights_df.Type):
-        ranked_data = rank_data(data_dict[factor],n_quantiles, type_)
+        masked_data = apply_mask(data_dict[factor],mask)
+        ranked_data = rank_data(masked_data,n_quantiles, type_)
         ranked_data_dict[factor] = ranked_data
         columns_list.append(ranked_data.columns)
 
@@ -104,16 +106,18 @@ def multi_factor_ranking(weights_df, data_dict, n_quantiles):
 
     dates = weighted_df_dict[list(weighted_df_dict.keys())[0]].index
     final_df_list = []
+    failed_dates = []
     for date in dates:
         summing_list = []
         try:
             for factor_df in weighted_df_dict.values():
                 summing_list.append(factor_df.loc[date])
         except KeyError:
+            failed_dates.append(date)
             continue
         final_df_list.append(sum(summing_list)/len(summing_list))
 
-    return pd.DataFrame(final_df_list)
+    return pd.DataFrame(final_df_list,index=dates.delete(failed_dates),columns=common_columns) ## dict_keys remove
 
 
 @st.cache_data
