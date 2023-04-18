@@ -36,7 +36,6 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
 @st.cache_data
 def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
 
-    df = df.astype(float)
     df = df.replace(to_replace=0,value=np.nan) # This was put in place to allow binning of rows with many 0s (duplicates in pct_change) - should be changed to something universal or dropped (not all rows which cannot be binned will be like so because of too many 0s. RSI for example does this with 100s)
     df = df.dropna(how='all',axis=0).dropna(how='all',axis=1)
 
@@ -104,26 +103,25 @@ def multi_factor_ranking(weights_df:pd.DataFrame, data_dict:dict, n_quantiles:in
     dates = weighted_df_dict[list(weighted_df_dict.keys())[0]].index
     final_df_list = []
     failed_dates = []
-    for date in dates:
+    for i, date in enumerate(dates):
         summing_list = []
         try:
             for factor_df in weighted_df_dict.values():
                 summing_list.append(factor_df.loc[date])
         except KeyError:
-            failed_dates.append(date)
+            failed_dates.append(i)
             continue
         final_df_list.append(sum(summing_list)/len(summing_list))
 
-    return pd.DataFrame(final_df_list,index=dates.delete(failed_dates),columns=common_columns) ## dict_keys remove
+    return pd.DataFrame(final_df_list,index=dates.delete(failed_dates),columns=common_columns)
 
 
 @st.cache_data
-def apply_mask(df,mask=None,mask_fp=None):
+def apply_mask(df:pd.DataFrame,mask:pd.DataFrame=None):
     if mask is None:
-        if mask_fp is None:
-            warn("No mask was provided.")
-            return df
-        mask = read_and_sort_data(mask_fp)
+        warn("No mask was provided.")
+        return df
+    mask = mask.astype(bool)
     common_columns = sorted(list(set(df.columns) & set(mask.columns)))
     common_rows = sorted(list(set(df.index) & set(mask.index)))
     df = df.loc[common_rows,common_columns]
@@ -132,6 +130,13 @@ def apply_mask(df,mask=None,mask_fp=None):
 
 @st.cache_data
 def read_and_sort_data(filepath):
-    df = pd.read_csv(filepath,index_col=0,sep=',')
+    extension = filepath.split('.')[-1]
+    if extension == 'csv':
+        df = pd.read_csv(filepath,index_col=0,sep=',',decimal='.')
+    elif extension == 'xlsx':
+        df = pd.read_excel(filepath,index_col=0,decimal='.')
+    else:
+        raise TypeError(f'Unsupported filetype: {extension}')
+    df = df.astype(float)
     df = df.set_index(pd.to_datetime(df.index)).sort_index()
     return df
