@@ -25,11 +25,11 @@ with st.sidebar:
         init_form_button = st.form_submit_button()
         
     if init_form_button:
-        st.session_state.prices_df = pd.read_csv(fr'{prices_csv_filepath}',index_col=0,sep=',')
+        st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
         if mask_filepath == 'None':
             st.session_state.mask = None
         else:
-            st.session_state.mask = pd.read_csv(fr'{mask_filepath}',index_col=0)
+            st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
         st.session_state.clean_data_dict,st.session_state.bad_dfs = af.filter_data(
             fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
         st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')

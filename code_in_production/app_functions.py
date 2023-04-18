@@ -14,7 +14,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
     for filename in os.listdir(pivoted_data_directory_filepath):
 
         filepath = os.path.join(pivoted_data_directory_filepath,filename)
-        df = pd.read_csv(filepath,index_col=0,sep=',')
+        df = read_and_sort_data(filepath)
         len_input = len(df)
         if expected_stocks_per_date == 1:
             expected_stocks_per_date = df.shape[1]
@@ -57,9 +57,6 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
 
 @st.cache_data
 def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int, shift_period:int,rets_period:int):
-
-    ranked_df = ranked_df.set_index(pd.to_datetime(ranked_df.index)).sort_index()
-    prices_df = prices_df.set_index(pd.to_datetime(prices_df.index)).sort_index()
 
     common_stocks = list(set(prices_df.columns) & set(ranked_df.columns))
     ranked_df = ranked_df.loc[:,common_stocks]
@@ -126,9 +123,15 @@ def apply_mask(df,mask=None,mask_fp=None):
         if mask_fp is None:
             warn("No mask was provided.")
             return df
-        mask = pd.read_csv(mask_fp, index_col=0)
+        mask = read_and_sort_data(mask_fp)
     common_columns = sorted(list(set(df.columns) & set(mask.columns)))
     common_rows = sorted(list(set(df.index) & set(mask.index)))
     df = df.loc[common_rows,common_columns]
     mask = mask.loc[common_rows,common_columns]
     return df.where(mask)
+
+@st.cache_data
+def read_and_sort_data(filepath):
+    df = pd.read_csv(filepath,index_col=0,sep=',')
+    df = df.set_index(pd.to_datetime(df.index)).sort_index()
+    return df
