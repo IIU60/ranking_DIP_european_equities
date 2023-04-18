@@ -1,6 +1,4 @@
 import eikon as ek
-import datetime as dt
-import dateutil.relativedelta
 import tqdm
 import pandas as pd
 import utils
