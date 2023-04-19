@@ -131,12 +131,12 @@ def apply_mask(df:pd.DataFrame,mask:pd.DataFrame=None):
 @st.cache_data
 def read_and_sort_data(filepath):
     extension = filepath.split('.')[-1]
-    if extension == 'csv':
+    if extension == (csv:='csv'):
         df = pd.read_csv(filepath,index_col=0,sep=',',decimal='.')
-    elif extension == 'xlsx':
+    elif extension in (excel:=['xlsx','xlsm']):
         df = pd.read_excel(filepath,index_col=0,decimal='.')
     else:
-        raise TypeError(f'Unsupported filetype: {extension}')
+        raise IOError(f'Unsupported filetype: [{extension}]. Must be in {[csv]+excel}')
     df = df.astype(float)
     df = df.set_index(pd.to_datetime(df.index)).sort_index()
     return df
