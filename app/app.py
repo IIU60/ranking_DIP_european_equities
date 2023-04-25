@@ -79,7 +79,7 @@ if st.session_state.start_app == True:
                 with st.expander('Available Functions documentation'):
                     for key, value in docstrings.items():
                         st.markdown(f"**{key}**")
-                        st.markdown(value)    
+                        st.markdown(value)
                 
             if custom_indicator_form_button:
                 custom_df = eval(user_input,{'__builtins__':{}},locals_dict)

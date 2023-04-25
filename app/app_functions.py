@@ -50,7 +50,7 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
             ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
         except ValueError:
             failed_to_rank.append(i)
-    print(failed_to_rank)
+    print('Failed to rank:\n',failed_to_rank)
     return pd.DataFrame(np.array(ranks_list), index=df.index.delete(failed_to_rank), columns=df.columns)
 
 
@@ -66,14 +66,22 @@ def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int,
     returns_df = prices_df.pct_change(rets_period,limit=1)
 
     quantiles_df = pd.DataFrame(columns=['equiponderado'])
+    failed_dates = []
     for i in range(1, n_quantiles+1):
         returns_list = []
         for date,ranks in (ranked_df==i).T.items():
-            returns_list.append(returns_df.loc[date,ranks].mean(axis=0))
+            if date in failed_dates:
+                continue
+            try:
+                returns_list.append(returns_df.loc[date,ranks].mean(axis=0))
+            except KeyError:
+                warn(f'{date} not found in prices file')
+                failed_dates.append(date)
         quantiles_df[f'decil_{i}'] = returns_list
     quantiles_df['equiponderado'] = quantiles_df.mean(axis=1)
     
-    quantiles_df = quantiles_df.set_index(ranked_df.index)
+    quantiles_df = quantiles_df.set_index(ranked_df.index.delete(failed_dates))
+    print('Failed to get returns:\n',failed_dates)
 
     return quantiles_df
 
