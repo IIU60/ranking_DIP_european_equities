@@ -70,18 +70,17 @@ def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int,
     for i in range(1, n_quantiles+1):
         returns_list = []
         for date,ranks in (ranked_df==i).T.items():
-            if date in failed_dates:
-                continue
             try:
                 returns_list.append(returns_df.loc[date,ranks].mean(axis=0))
             except KeyError:
                 warn(f'{date} not found in prices file')
+                ranked_df.drop(date,inplace=True)
                 failed_dates.append(date)
         quantiles_df[f'decil_{i}'] = returns_list
     quantiles_df['equiponderado'] = quantiles_df.mean(axis=1)
     
-    quantiles_df = quantiles_df.set_index(ranked_df.index.delete(failed_dates))
-    print('Failed to get returns:\n',failed_dates)
+    quantiles_df = quantiles_df.set_index(ranked_df.index)
+    print('Failed to get returns for:\n',failed_dates)
 
     return quantiles_df
 
