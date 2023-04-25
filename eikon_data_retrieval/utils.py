@@ -22,7 +22,7 @@ def create_dates_list(type_=['days','months'], start_date=(2000,1,1), end_date=(
         while (date := start_date + relativedelta(days=i+1)) <= end_date:
             dates.append(date)
             i +=1
-    if type_=='months':
+    elif type_=='months':
         while (date := start_date + relativedelta(months=i+1)) <= end_date:
             dates.append(date)
             i +=1
