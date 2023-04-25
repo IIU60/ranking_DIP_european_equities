@@ -26,7 +26,7 @@ with st.sidebar:
         
     if init_form_button:
         st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
-        if mask_filepath == 'None':
+        if mask_filepath.lower() == 'none':
             st.session_state.mask = None
         else:
             st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
