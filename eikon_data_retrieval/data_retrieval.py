@@ -43,11 +43,12 @@ def dfs_list_from_dir(dir_fp):
     return dfs_list
 
 
-def reconstruction(field_name:str,dfs_list:list): # Start date and end date
+def reconstruction(field_name:str,dfs_list:list): # Start date and end date # añadir mas frecuencias de 'months_list'
 
     concated_df = pd.concat(dfs_list)
 
-    processed_df = concated_df.dropna().drop_duplicates()
+    processed_df = concated_df.replace(['NaN',''],pd.NA)
+    processed_df = processed_df.dropna().drop_duplicates()
     processed_df['Date'] = processed_df.Date.apply(lambda x: x[:10])
 
     pivoted_df = processed_df.pivot(index='Date',columns='Instrument',values=list(set(processed_df.columns)-set(['Date','Instrument']))[0])
@@ -82,13 +83,14 @@ def download_indicators(fields_list:list,instruments_list:list,parameters:dict,s
         os.mkdir(field_name+'/raw_data')
 
         dfs_list = vertical_download(field_name,field_function,instruments_list,parameters)
-        try:
-            complete_df = reconstruction(field_name,dfs_list) # star_date and end_date
-        except ValueError as e:
-            print(e,'\nRetrying...')
-            dfs_list = dfs_list_from_dir(fr'{field_name}/raw_data')
-            complete_df = reconstruction(field_name,dfs_list)
-            print('\nSuccessful!')
+        complete_df = reconstruction(field_name,dfs_list) # start_date and end_date
+        #try:
+        #    complete_df = reconstruction(field_name,dfs_list)
+        #except ValueError as e:
+        #    print(e,'\nRetrying...')
+        #    dfs_list = dfs_list_from_dir(fr'{field_name}/raw_data')
+        #    complete_df = reconstruction(field_name,dfs_list)
+        #    print('\nSuccessful!')
         
         complete_df.to_csv(f'{field_name}/{field_name}.csv')
         
