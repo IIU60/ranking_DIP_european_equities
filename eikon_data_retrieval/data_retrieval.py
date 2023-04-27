@@ -6,6 +6,15 @@ import os
 
 ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
 
+
+frequencies_dict = {
+    'yearly' : ['AY', 'AQ','Y', 'Q', 'FY', 'FS', 'FH', 'FQ', 'FI', 'CY', 'CQ', 'CS', 'CH', 'F'],
+    'weekly' : ['AW', 'CW', 'W'],
+    'daily' : ['C', 'D', 'NA', 'WD'],
+    'monthly' : ['AM', 'CM', 'M']
+}
+
+
 def vertical_download(field_name:str,field_function,instruments_list,parameters):
     
     fields = [field_function,f'{field_function}.date']
@@ -43,8 +52,11 @@ def dfs_list_from_dir(dir_fp):
     return dfs_list
 
 
-def reconstruction(field_name:str,dfs_list:list): # Start date and end date # añadir mas frecuencias de 'months_list'
-
+def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(2023,1,1),desired_type_of_dates='monthly', day_of_week:int=None): # Start date and end date # añadir mas frecuencias de 'months_list'
+    types_of_dates = ['daily','weekly','first_of_month','monthly','yearly']
+    if desired_type_of_dates not in types_of_dates:
+        raise ValueError('type_of_date: %s is not in %s'% (desired_type_of_dates,types_of_dates))
+    
     concated_df = pd.concat(dfs_list)
 
     processed_df = concated_df.replace(['NaN',''],pd.NA)
@@ -53,24 +65,45 @@ def reconstruction(field_name:str,dfs_list:list): # Start date and end date # a�
 
     pivoted_df = processed_df.pivot(index='Date',columns='Instrument',values=list(set(processed_df.columns)-set(['Date','Instrument']))[0])
 
-    days_list = utils.create_dates_list('days',as_str=True)
-    months_list = utils.create_dates_list('months',as_str=True)
+    days_list = utils.create_dates_list('daily',start_date=start_date,end_date=end_date,as_str=True)
+    
+    if desired_type_of_dates == 'first_of_month':
+        selection_of_dates = utils.create_dates_list('months',start_date=start_date,end_date=end_date,as_str=True)
+    elif desired_type_of_dates in ['monthly','yearly']:
+        selection_of_dates = utils.dates_list_last_day_of_month(start_date,end_date,as_str=True)
+    elif desired_type_of_dates == 'daily':
+        selection_of_dates = days_list
+    elif desired_type_of_dates == 'weekly':
+        selection_of_dates = utils.create_dates_list('weekly',start_date,end_date,as_str=True,day_of_week=day_of_week)
+    
     dates_dict = {}
     for i in days_list:
         dates_dict[i] = pd.NA
     dates_dict.update(pivoted_df.T.to_dict())
-
     complete_dates_df = pd.DataFrame(dates_dict).T.sort_index()
-    filled_df = complete_dates_df.fillna(method='ffill',limit=7).loc[months_list]
+    
+    filled_df = complete_dates_df.fillna(method='ffill',limit=7).loc[selection_of_dates]
 
     return filled_df
+
+
+def find_freq(freq,frequencies_dict):
+    for key, freqs_list in frequencies_dict.items():
+        if freq in freqs_list:
+            return key
+    raise KeyError(f'{freq} not in the known dict of frequencies')
 
 
 def download_indicators(fields_list:list,instruments_list:list,parameters:dict,saving_directory_fp:str):
     
     os.chdir(fr'{saving_directory_fp}')
+
+    start_date = tuple(map(int,parameters.get('SDate').split('-')))
+    end_date = tuple(map(int,parameters.get('EDate').split('-')))
+    freq = parameters.get('Frq')
     
     for field_function in fields_list:
+
         field_name = field_function.split('.')[-1]
         i = 0
         while i != -1:
@@ -81,9 +114,9 @@ def download_indicators(fields_list:list,instruments_list:list,parameters:dict,s
                 field_name = f'{field_name.split("(")[0]}({i})'
                 i += 1
         os.mkdir(field_name+'/raw_data')
-
+        desired_type_of_dates = find_freq(freq,frequencies_dict)
         dfs_list = vertical_download(field_name,field_function,instruments_list,parameters)
-        complete_df = reconstruction(field_name,dfs_list) # start_date and end_date
+        complete_df = reconstruction(dfs_list=dfs_list,start_date=start_date,end_date=end_date,desired_type_of_dates=desired_type_of_dates) # start_date and end_date
         #try:
         #    complete_df = reconstruction(field_name,dfs_list)
         #except ValueError as e:
@@ -91,6 +124,9 @@ def download_indicators(fields_list:list,instruments_list:list,parameters:dict,s
         #    dfs_list = dfs_list_from_dir(fr'{field_name}/raw_data')
         #    complete_df = reconstruction(field_name,dfs_list)
         #    print('\nSuccessful!')
+
+        if freq in frequencies_dict['yearly']:
+            complete_df = complete_df.fillna(method='ffill',limit=12)
         
         complete_df.to_csv(f'{field_name}/{field_name}.csv')
         
