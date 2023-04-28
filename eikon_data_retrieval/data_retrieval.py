@@ -4,7 +4,8 @@ import pandas as pd
 import utils
 import os
 
-ek.set_app_key('89915a3b58874e1599870c6ecc45d6edd6344f8c')
+from dotenv import load_dotenv; load_dotenv(r'..\.env')
+ek.set_app_key(os.environ['EIKON_APP_KEY'])
 
 
 frequencies_dict = {
@@ -17,6 +18,16 @@ frequencies_dict = {
 
 def vertical_download(field_name:str,field_function,instruments_list,parameters):
     
+    i = 0
+    while i != -1:
+        try:
+            os.mkdir(field_name)
+            i = -1
+        except FileExistsError:
+            field_name = f'{field_name.split("(")[0]}({i})'
+            i += 1
+    os.mkdir(field_name+'/raw_data')
+
     fields = [field_function,f'{field_function}.date']
 
     print(f'Downloading {field_name}')
@@ -27,32 +38,39 @@ def vertical_download(field_name:str,field_function,instruments_list,parameters)
     for instrument in tqdm(instruments_list):
         try:
             df, err = ek.get_data(instrument, fields, parameters)
-            df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
-            dfs_list.append(df)
-        except Exception as x:
+        except ek.EikonError as x:
+            if x.args[0] == 401:
+                raise x
             fails.append(instrument)
-            print(x)
+            continue
+        df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
+        dfs_list.append(df)
 
-    for instrument in tqdm(fails):
-        try:
-            df, err = ek.get_data(instrument, fields, parameters)
+    if not fails:
+        print('Retrying fails:')
+        for instrument in tqdm(fails[:]):
+            try:
+                df, err = ek.get_data(instrument, fields, parameters)
+                fails.remove(instrument)
+            except ek.EikonError as x:
+                if x.args[0] == 401:
+                    raise x
+                continue
             df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
             dfs_list.append(df)
-        except Exception as x:
-            print(f'Failed twice for {instrument}',x)
+        print('Failed twice for:\n',fails)
 
     return dfs_list
 
 
 def dfs_list_from_dir(dir_fp):
     dfs_list = []
-    
     for i in os.listdir(dir_fp):
         dfs_list.append(pd.read_csv(os.path.join(dir_fp,i),index_col=0))
     return dfs_list
 
 
-def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(2023,1,1),desired_type_of_dates='monthly', day_of_week:int=None): # Start date and end date # añadir mas frecuencias de 'months_list'
+def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(2023,1,1),desired_type_of_dates:str='monthly', day_of_week:int=None):
     types_of_dates = ['daily','weekly','first_of_month','monthly','yearly']
     if desired_type_of_dates not in types_of_dates:
         raise ValueError('type_of_date: %s is not in %s'% (desired_type_of_dates,types_of_dates))
@@ -102,33 +120,24 @@ def download_indicators(fields_list:list,instruments_list:list,parameters:dict,s
     end_date = tuple(map(int,parameters.get('EDate').split('-')))
     freq = parameters.get('Frq')
     
+    data_dict = {}
+    
     for field_function in fields_list:
 
         field_name = field_function.split('.')[-1]
-        i = 0
-        while i != -1:
-            try:
-                os.mkdir(field_name)
-                i = -1
-            except FileExistsError:
-                field_name = f'{field_name.split("(")[0]}({i})'
-                i += 1
-        os.mkdir(field_name+'/raw_data')
+        
         desired_type_of_dates = find_freq(freq,frequencies_dict)
         dfs_list = vertical_download(field_name,field_function,instruments_list,parameters)
-        complete_df = reconstruction(dfs_list=dfs_list,start_date=start_date,end_date=end_date,desired_type_of_dates=desired_type_of_dates) # start_date and end_date
-        #try:
-        #    complete_df = reconstruction(field_name,dfs_list)
-        #except ValueError as e:
-        #    print(e,'\nRetrying...')
-        #    dfs_list = dfs_list_from_dir(fr'{field_name}/raw_data')
-        #    complete_df = reconstruction(field_name,dfs_list)
-        #    print('\nSuccessful!')
+        complete_df = reconstruction(dfs_list=dfs_list,start_date=start_date,end_date=end_date,desired_type_of_dates=desired_type_of_dates)
 
         if freq in frequencies_dict['yearly']:
             complete_df = complete_df.fillna(method='ffill',limit=12)
         
         complete_df.to_csv(f'{field_name}/{field_name}.csv')
+        
+        data_dict[field_name] = complete_df
+    
+    return data_dict
         
         
 #def get_data(fields:list,desired_field_name:str):
