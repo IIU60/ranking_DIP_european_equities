@@ -15,6 +15,7 @@ def create_df_mask_from_json(json_fp,output_fp):
 def create_dates_list(type_=['daily','weekly','monthly'], start_date=(2000,1,1), end_date=(2023,1,1), as_str=False, only_weekdays=False, day_of_week:int=5):
     start_date = dt.date(*start_date)
     end_date = dt.date(*end_date)
+    assert start_date < end_date, ValueError(f'{start_date} is not before {end_date}. Start date must be earlier than end date.')
     
     dates = [start_date]
     i = 0
