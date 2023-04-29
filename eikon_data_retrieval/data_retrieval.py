@@ -38,9 +38,7 @@ def vertical_download(field_name:str,field_function,instruments_list,parameters)
     for instrument in tqdm(instruments_list):
         try:
             df, err = ek.get_data(instrument, fields, parameters)
-        except ek.EikonError as x:
-            if x.args[0] == 401:
-                raise x
+        except Exception:
             fails.append(instrument)
             continue
         df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
@@ -52,9 +50,7 @@ def vertical_download(field_name:str,field_function,instruments_list,parameters)
             try:
                 df, err = ek.get_data(instrument, fields, parameters)
                 fails.remove(instrument)
-            except ek.EikonError as x:
-                if x.args[0] == 401:
-                    raise x
+            except Exception:
                 continue
             df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
             dfs_list.append(df)
