@@ -144,6 +144,6 @@ def read_and_sort_data(filepath):
         df = pd.read_excel(filepath,index_col=0,decimal='.')
     else:
         raise IOError(f'Unsupported filetype: [{extension}]. Must be in {[csv]+excel}')
-    df = df.astype(float)
+    df = df.apply(pd.to_numeric)
     df = df.set_index(pd.to_datetime(df.index)).sort_index()
     return df
