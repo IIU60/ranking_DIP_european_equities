@@ -42,16 +42,13 @@ if st.session_state.start_app == True:
     with st.sidebar:
         if 'create_weighted_indicator' not in st.session_state:
             st.session_state.create_weighted_indicator = False
-        
         if st.button('Create Multi-factor Indicator'):
             st.session_state.create_weighted_indicator = True
-        
         if st.session_state.create_weighted_indicator == True:
             with st.form('weighted_indicator_form'):
                 weighted_indicator_name = st.text_input('Indicator Name:')
                 weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
                 weighted_indicator_form_button = st.form_submit_button()
-            
             if weighted_indicator_form_button:
                 weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles,st.session_state.mask)
                 st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
@@ -61,10 +58,8 @@ if st.session_state.start_app == True:
 
         if 'create_custom_indicator' not in st.session_state:
             st.session_state.create_custom_indicator = False
-
         if st.button('Create Custom Indicator'):
             st.session_state.create_custom_indicator = True
-
         if st.session_state.create_custom_indicator == True:
             with st.form('custom_indicator_form'):
                 custom_indicator_name = st.text_input('Indicator Name:')
@@ -81,7 +76,6 @@ if st.session_state.start_app == True:
                     for key, value in docstrings.items():
                         st.markdown(f"**{key}**")
                         st.markdown(value)
-                
             if custom_indicator_form_button:
                 custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
                 st.session_state.clean_data_dict[custom_indicator_name] = custom_df
@@ -91,16 +85,13 @@ if st.session_state.start_app == True:
 
         if 'download_indicator' not in st.session_state:
             st.session_state.download_indicator = False
-
         if st.button('Download Indicator'):
             st.session_state.download_indicator = True
-
         if st.session_state.download_indicator == True:
             with st.form('download_indicator_form'):
                 indicator_to_download = st.selectbox('Indicator:',options=st.session_state.clean_data_dict.keys())
                 download_indicator_name = st.text_input('Name:')
                 download_indicator_form_button = st.form_submit_button('Download')
-        
             if download_indicator_form_button:
                 if f'{download_indicator_name}.csv' in os.listdir(data_directory_filepath):
                     i = 0
@@ -119,14 +110,26 @@ if st.session_state.start_app == True:
     for i in range(n_indicators):
         with cols[i]:
             selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys(),key=f'ratio_{i}')
-            type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
-            log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
-            notna_graph = st.checkbox('Show Non-missing Values Graph',key=f'notna_graph_{i}')
             
+            subcol1,subcol2 = st.columns(2)
+            with subcol1:       
+                type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
+
             print(selected_ratio)
             masked_data = af.apply_mask(st.session_state.clean_data_dict[selected_ratio],st.session_state.mask)
             ranked_data = af.rank_data(masked_data, n_quantiles, type_of_indicator)
             returns_df = af.get_returns(ranked_data, st.session_state.prices_df, n_quantiles,1,1)
+            
+            with subcol2:
+                st.markdown('##')
+                with st.expander('Date Range'):
+                    start_date = st.date_input('Start Date',value=(index_list:=returns_df.index.to_list())[0])
+                    end_date = st.date_input('End Date',value=index_list[-1])
+            subcol3,subcol4 = st.columns(2)
+            with subcol3:       
+                log_scale = st.checkbox('Logarithmic Scale:',key=f'log_graphs_{i}')
+            with subcol4:
+                notna_graph = st.checkbox('Show Non-missing Values Graph',key=f'notna_graph_{i}')
             
             if notna_graph:
                 st.write(len(returns_df)/277)
@@ -140,27 +143,28 @@ if st.session_state.start_app == True:
                 }
 
             desired_graphs = st.multiselect('Desired Graphs:',graphs_dict.keys(),key=f'desired_graphs_{i}')
-        
+
             for graph in desired_graphs:
-                st.plotly_chart(graphs_dict[graph](returns_df, selected_ratio, log_scale=log_scale),True,config=pl.config)
+                st.plotly_chart(graphs_dict[graph](returns_df.loc[start_date:end_date], selected_ratio, log_scale=log_scale),True,config=pl.config)
             
             if f'download_tearsheet_{i}' not in st.session_state:
                 st.session_state[f'download_tearsheet_{i}'] = False
-
             if st.button('Create Tearsheet',key=f'tearsheet_button_{i}'):
                 st.session_state[f'download_tearsheet_{i}'] = True
-
             if st.session_state[f'download_tearsheet_{i}'] == True:
                 with st.form(f'download_tearsheet_form_{i}'):
                     quantile = st.selectbox(label='Quantile:',options=returns_df.columns)
+                    match_date_range = st.checkbox('Match Date Range')
                     download_tearsheet_form_button = st.form_submit_button('Download')
-            
                 if download_tearsheet_form_button:
+                    tearsheet_df = returns_df.copy()
+                    if match_date_range:
+                        tearsheet_df = tearsheet_df.loc[start_date:end_date]
                     name = '{}_{}'.format(selected_ratio,quantile)
                     fp = f'{data_directory_filepath}/tearsheets/{name}.html'
                     if 'tearsheets' not in os.listdir(data_directory_filepath):
                         os.mkdir(data_directory_filepath+'/tearsheets')
-                    qs_html(returns = returns_df[quantile],benchmark=returns_df['equiponderado'], periods_per_year=12, match_dates=True, title=name, download_filename=fp,output='')
+                    qs_html(returns = tearsheet_df[quantile],benchmark=tearsheet_df['equiponderado'], periods_per_year=12, match_dates=True, title=name, download_filename=fp,output='')
                     st.success(f'Downloaded Successfully!\n\nTearsheet available at {fp}')
                     st.session_state[f'download_tearsheet_{i}'] = False
 
