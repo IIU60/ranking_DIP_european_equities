@@ -4,7 +4,7 @@ import plots as pl
 import pandas as pd
 import os
 import custom_calculations as calcs
-from quantstats.reports import html as tearsheet
+from quantstats.reports import html as qs_html
 
 st.set_page_config(layout='wide')
 st.title('Stoxx600 Equities Dashboard')
@@ -102,8 +102,12 @@ if st.session_state.start_app == True:
                 download_indicator_form_button = st.form_submit_button('Download')
         
             if download_indicator_form_button:
-                if download_indicator_name+'.csv' in os.listdir(data_directory_filepath):
-                    st.warning(f'{download_indicator_name} was overwritten')
+                if f'{download_indicator_name}.csv' in os.listdir(data_directory_filepath):
+                    i = 0
+                    while f'{download_indicator_name}.csv' in os.listdir(data_directory_filepath):
+                        download_indicator_name = f'{download_indicator_name.split("(")[0]}({i})'
+                        i += 1
+                    st.warning(f'File already existed. Saving as:{download_indicator_name}')
                 st.session_state.clean_data_dict[indicator_to_download].to_csv(fr'{data_directory_filepath}\{download_indicator_name}.csv')
                 st.success('Downloaded Successfully')
                 st.session_state.download_indicator = False
@@ -156,7 +160,7 @@ if st.session_state.start_app == True:
                     fp = f'{data_directory_filepath}/tearsheets/{name}.html'
                     if 'tearsheets' not in os.listdir(data_directory_filepath):
                         os.mkdir(data_directory_filepath+'/tearsheets')
-                    tearsheet(returns = returns_df[quantile],benchmark=returns_df['equiponderado'], periods_per_year=12, match_dates=True, title=name, download_filename=fp,output='')
+                    qs_html(returns = returns_df[quantile],benchmark=returns_df['equiponderado'], periods_per_year=12, match_dates=True, title=name, download_filename=fp,output='')
                     st.success(f'Downloaded Successfully!\n\nTearsheet available at {fp}')
                     st.session_state[f'download_tearsheet_{i}'] = False
 
