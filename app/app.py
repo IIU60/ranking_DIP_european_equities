@@ -4,6 +4,7 @@ import plots as pl
 import pandas as pd
 import os
 import custom_calculations as calcs
+from quantstats.reports import html as tearsheet
 
 st.set_page_config(layout='wide')
 st.title('Stoxx600 Equities Dashboard')
@@ -138,6 +139,27 @@ if st.session_state.start_app == True:
         
             for graph in desired_graphs:
                 st.plotly_chart(graphs_dict[graph](returns_df, selected_ratio, log_scale=log_scale),True,config=pl.config)
+            
+            if f'download_tearsheet_{i}' not in st.session_state:
+                st.session_state[f'download_tearsheet_{i}'] = False
+
+            if st.button('Create Tearsheet',key=f'tearsheet_button_{i}'):
+                st.session_state[f'download_tearsheet_{i}'] = True
+
+            if st.session_state[f'download_tearsheet_{i}'] == True:
+                with st.form(f'download_tearsheet_form_{i}'):
+                    quantile = st.selectbox(label='Quantile:',options=returns_df.columns)
+                    download_tearsheet_form_button = st.form_submit_button('Download')
+            
+                if download_tearsheet_form_button:
+                    name = '{}_{}'.format(selected_ratio,quantile)
+                    fp = f'{data_directory_filepath}/tearsheets/{name}.html'
+                    if 'tearsheets' not in os.listdir(data_directory_filepath):
+                        os.mkdir(data_directory_filepath+'/tearsheets')
+                    tearsheet(returns = returns_df[quantile],benchmark=returns_df['equiponderado'], periods_per_year=12, match_dates=True, title=name, download_filename=fp,output='')
+                    st.success(f'Downloaded Successfully!\n\nTearsheet available at {fp}')
+                    st.session_state[f'download_tearsheet_{i}'] = False
+
 
 else:
     st.warning('Please Submit the data and params form in the sidebar to load the app.')
