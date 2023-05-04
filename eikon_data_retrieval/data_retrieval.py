@@ -97,6 +97,7 @@ def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(202
     complete_dates_df = pd.DataFrame(dates_dict).T.sort_index()
     
     filled_df = complete_dates_df.fillna(method='ffill',limit=7).loc[selection_of_dates]
+    filled_df = filled_df.apply(pd.to_numeric)
 
     return filled_df
 
