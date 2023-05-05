@@ -149,3 +149,13 @@ def read_and_sort_data(filepath):
         df = df.apply(pd.to_numeric)
         df = df.set_index(pd.to_datetime(df.index)).sort_index()
         return df
+
+
+def check_dir_and_change_filename(filename,dir_fp,ext):
+    if f'{filename}{ext}' in os.listdir(dir_fp):
+        i = 0
+        while f'{filename}{ext}' in os.listdir(dir_fp):
+            filename = f'{filename.split("(")[0]}({i})'
+            i += 1
+        st.warning(f'File already existed. Saving as:{filename}')
+    return filename
