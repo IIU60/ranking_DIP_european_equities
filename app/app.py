@@ -126,12 +126,7 @@ if st.session_state.start_app == True:
                 download_indicator_form_button = st.form_submit_button('Download')
 
             if download_indicator_form_button:
-                #if f'{download_indicator_name}.csv' in os.listdir(data_directory_filepath):
-                #    i = 0
-                #    while f'{download_indicator_name}.csv' in os.listdir(data_directory_filepath):
-                #        download_indicator_name = f'{download_indicator_name.split("(")[0]}({i})'
-                #        i += 1
-                #    st.warning(f'File already existed. Saving as:{download_indicator_name}')
+                
                 filename = af.check_dir_and_change_filename(download_indicator_name,data_directory_filepath,'.csv')
 
                 st.session_state.clean_data_dict[indicator_to_download].to_csv(fr'{data_directory_filepath}\{filename}.csv')
