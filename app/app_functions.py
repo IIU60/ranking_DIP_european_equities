@@ -14,21 +14,22 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
     for filename in os.listdir(pivoted_data_directory_filepath):
 
         filepath = os.path.join(pivoted_data_directory_filepath,filename)
-        df = read_and_sort_data(filepath)
-        len_input = len(df)
-        if expected_stocks_per_date == 1:
-            expected_stocks_per_date = df.shape[1]
-        masked_df = apply_mask(df,mask)
- 
-        masked_df = masked_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
-        masked_df = masked_df.loc[(masked_df.notna().sum(axis=1)/expected_stocks_per_date)>min_stocks_per_date_ratio]
-        
-        maintained_dates_ratio = len(masked_df)/len_input
-        
-        if maintained_dates_ratio > min_total_dates_ratio:
-            good_dfs[filename.split('.')[0]] = df
-        else:
-            bad_dfs[f"{filename.split('.')[0]}: {maintained_dates_ratio}"] = df
+        if os.path.isfile(filepath):
+            df = read_and_sort_data(filepath)
+            len_input = len(df)
+            if expected_stocks_per_date == 1:
+                expected_stocks_per_date = df.shape[1]
+            masked_df = apply_mask(df,mask)
+    
+            masked_df = masked_df.dropna(axis=0,how='all').dropna(axis=1,how='all')
+            masked_df = masked_df.loc[(masked_df.notna().sum(axis=1)/expected_stocks_per_date)>min_stocks_per_date_ratio]
+            
+            maintained_dates_ratio = len(masked_df)/len_input
+            
+            if maintained_dates_ratio > min_total_dates_ratio:
+                good_dfs[filename.split('.')[0]] = df
+            else:
+                bad_dfs[f"{filename.split('.')[0]}: {maintained_dates_ratio}"] = df
     
     return good_dfs,bad_dfs
 
@@ -137,13 +138,24 @@ def apply_mask(df:pd.DataFrame,mask:pd.DataFrame=None):
 
 @st.cache_data
 def read_and_sort_data(filepath):
-    extension = filepath.split('.')[-1]
-    if extension == (csv:='csv'):
-        df = pd.read_csv(filepath,index_col=0,sep=',',decimal='.')
-    elif extension in (excel:=['xlsx','xlsm']):
-        df = pd.read_excel(filepath,index_col=0,decimal='.')
-    else:
-        raise IOError(f'Unsupported filetype: [{extension}]. Must be in {[csv]+excel}')
-    df = df.apply(pd.to_numeric)
-    df = df.set_index(pd.to_datetime(df.index)).sort_index()
-    return df
+    extension = os.path.splitext(filepath)[-1].lower()
+    if os.path.isfile(filepath):
+        if extension == (csv:='.csv'):
+            df = pd.read_csv(filepath,index_col=0,sep=',',decimal='.')
+        elif extension in (excel:=['.xlsx','.xlsm']):
+            df = pd.read_excel(filepath,index_col=0,decimal='.')
+        else:
+            raise IOError(f'Unsupported filetype: [{extension}]. Must be in {[csv]+excel}')
+        df = df.apply(pd.to_numeric)
+        df = df.set_index(pd.to_datetime(df.index)).sort_index()
+        return df
+
+
+def check_dir_and_change_filename(filename,dir_fp,ext):
+    if f'{filename}{ext}' in os.listdir(dir_fp):
+        i = 0
+        while f'{filename}{ext}' in os.listdir(dir_fp):
+            filename = f'{filename.split("(")[0]}({i})'
+            i += 1
+        st.warning(f'File already existed. Saving as:{filename}')
+    return filename
