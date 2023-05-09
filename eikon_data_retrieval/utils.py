@@ -31,16 +31,11 @@ def create_dates_list(type_=['daily','weekly','monthly'], start_date=(2000,1,1),
         raise ValueError(f"{type_} not in ['daily','weekly','monthly']")
     
     if type_=='weekly':
-        first_day = idx if (idx:=(day_of_week - dates[0].weekday() - 1)) != -1 else 6
-        dates = dates[first_day::7]
+        dates = [i for i in dates.copy() if i.weekday()==day_of_week-1]
 
     if only_weekdays==True: ## Have to fix the -1 list indexing bug here too
         if type_=='daily':
-            weekday0 = dates[0].weekday()
-            saturdays = dates[5-weekday0::7]
-            sundays = dates[6-weekday0::7]
-            dates = set(dates) - set(saturdays) - set(sundays)
-            dates = sorted(list(dates))
+            dates = [i for i in dates.copy() if i.weekday() not in [5,6]]
         else:
             raise ValueError('can only calculate weekdays if type_ is daily')
 
