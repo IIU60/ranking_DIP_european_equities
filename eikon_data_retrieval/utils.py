@@ -33,7 +33,7 @@ def create_dates_list(type_=['daily','weekly','monthly'], start_date=(2000,1,1),
     if type_=='weekly':
         dates = [i for i in dates.copy() if i.weekday()==day_of_week-1]
 
-    if only_weekdays==True: ## Have to fix the -1 list indexing bug here too
+    if only_weekdays==True:
         if type_=='daily':
             dates = [i for i in dates.copy() if i.weekday() not in [5,6]]
         else:
