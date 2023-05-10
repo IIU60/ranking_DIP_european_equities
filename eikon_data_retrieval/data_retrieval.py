@@ -102,10 +102,12 @@ def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(202
     dates_dict.update(pivoted_df.T.to_dict())
     complete_dates_df = pd.DataFrame(dates_dict).T.sort_index() #create a dataframe with desired dates but missing values for instruments not found in original dataframes
     
-    filled_df = complete_dates_df.fillna(method='ffill',limit=7).loc[selection_of_dates] #fill missing values using a fill-forward method and selecting the desired dates frequency
-    filled_df = filled_df.apply(pd.to_numeric) #format dataframe to contain only numeric values
+    filled_df = complete_dates_df.fillna(method='ffill',limit=7) #fill missing values using a fill-forward method
+    
+    final_df = filled_df.loc[selection_of_dates] #selecting the desired dates frequency
+    final_df = final_df.apply(pd.to_numeric) #format dataframe to contain only numeric values
 
-    return filled_df
+    return final_df
 
 
 #function to determine the frequency of data, based on the freq parameter and the frequencies_dict
