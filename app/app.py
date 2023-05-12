@@ -42,8 +42,11 @@ with st.sidebar:
         else: #Read mask, add to session state
             st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
         #Read and filter the data in in the data directory
-        st.session_state.clean_data_dict,st.session_state.bad_dfs = af.filter_data(
+        st.session_state.good_dfs,st.session_state.bad_dfs = af.filter_data(
             fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
+        if 'data_dict' not in st.session_state:
+            st.session_state.data_dict = {}
+        st.session_state.data_dict.update(st.session_state.good_dfs)
         #Show rejected files
         st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
         st.session_state.start_app = True
@@ -64,15 +67,15 @@ if st.session_state.start_app == True:
             with st.form('weighted_indicator_form'):
                 weighted_indicator_name = st.text_input('Indicator Name:')
                 #creating and showing the dataframe with available indicators
-                weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.clean_data_dict.keys(), Weight=0.0, Type='-')),width=600)
+                weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.data_dict.keys(), Weight=0.0, Type='-')),width=600)
                 
                 weighted_indicator_form_button = st.form_submit_button()
            
             if weighted_indicator_form_button:
                 #Get weighted mean of rankings of the indicators specified in the dataframe
-                weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.clean_data_dict, n_quantiles,st.session_state.mask)
+                weighted_indicator_df = af.multi_factor_ranking(weighted_ratio_weights_df, st.session_state.data_dict, n_quantiles,st.session_state.mask)
                 #add data to session state
-                st.session_state.clean_data_dict[weighted_indicator_name] = weighted_indicator_df
+                st.session_state.data_dict[weighted_indicator_name] = weighted_indicator_df
                 
                 st.success('Created Successfully')
                 #Unflag to close the form on next reload
@@ -99,7 +102,7 @@ if st.session_state.start_app == True:
                 calcs_dict = {k:v for k,v in calcs.__dict__.items() if not k.startswith('__') and k not in ['ta','pd','apply_mask','mask']}
                 #creating the dictionary for the local namespace of the eval function and adding the platforms data to it
                 locals_dict = calcs_dict.copy()
-                locals_dict.update(st.session_state.clean_data_dict)
+                locals_dict.update(st.session_state.data_dict)
                 #gathering functions docstrings for documentation
                 docstrings = {k:v.__doc__ for k, v in calcs_dict.items()}
                 #showing the documentation of the available functions
@@ -112,7 +115,7 @@ if st.session_state.start_app == True:
                 #evaluate the formula
                 custom_df = eval(user_input,{'__builtins__':{}},locals_dict)
                 #appending data to session state
-                st.session_state.clean_data_dict[custom_indicator_name] = custom_df
+                st.session_state.data_dict[custom_indicator_name] = custom_df
 
                 st.success('Created Successfully')
                 #unflag to close on reload
@@ -128,7 +131,7 @@ if st.session_state.start_app == True:
         if st.session_state.download_indicator == True:
             #user input form
             with st.form('download_indicator_form'):
-                indicator_to_download = st.selectbox('Indicator:',options=st.session_state.clean_data_dict.keys())
+                indicator_to_download = st.selectbox('Indicator:',options=st.session_state.data_dict.keys())
                 download_indicator_name = st.text_input('Name:')
                 download_indicator_form_button = st.form_submit_button('Download')
 
@@ -136,7 +139,7 @@ if st.session_state.start_app == True:
                 #check directory for filename and modify if found
                 filename = af.check_dir_and_change_filename(download_indicator_name,data_directory_filepath,'.csv')
                 #save to csv
-                st.session_state.clean_data_dict[indicator_to_download].to_csv(fr'{data_directory_filepath}\{filename}.csv')
+                st.session_state.data_dict[indicator_to_download].to_csv(fr'{data_directory_filepath}\{filename}.csv')
 
                 st.success('Downloaded Successfully')
                 #unflag to close on reload
@@ -151,16 +154,16 @@ if st.session_state.start_app == True:
         #in each column:
         with cols[i]:
             #selected dataframe
-            selected_ratio = st.selectbox('Ratio:', st.session_state.clean_data_dict.keys(),key=f'ratio_{i}')
+            selected_ratio = st.selectbox('Ratio:', st.session_state.data_dict.keys(),key=f'ratio_{i}')
             #columns for params
             subcol1,subcol2 = st.columns(2)
             #type of indicator 'high'/'low'
             with subcol1:       
                 type_of_indicator = st.selectbox('Type:', ['high','low'],key=f'type_{i}')
             #show working values name in terminal
-            print(selected_ratio)
+            print('\nWorking on: ',selected_ratio)
             #apply filtering mask
-            masked_data = af.apply_mask(st.session_state.clean_data_dict[selected_ratio],st.session_state.mask)
+            masked_data = af.apply_mask(st.session_state.data_dict[selected_ratio],st.session_state.mask)
             #rank the data
             ranked_data = af.rank_data(masked_data, n_quantiles, type_of_indicator)
             #calculate the returns
