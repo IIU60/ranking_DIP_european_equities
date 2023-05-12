@@ -92,8 +92,11 @@ def plot_sharpe(df, indicator_name='',*args,**kwargs):
     return fig
 
 # Define a function to plot the number of non-null values in a DataFrame over time.
-def notna_plot(df):
+def notna_plot(df,absolute=True):
     # Create a DataFrame with the number of non-null values in each row of the DataFrame.
-    data = df.notna().sum(axis=1)
+    if absolute == True:
+        data = df.notna().sum(axis=1)
+    else:
+        data = df.notna().sum(axis=1)/len(df.columns)
     fig = px.line(data)
     return fig
