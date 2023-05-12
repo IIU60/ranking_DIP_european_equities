@@ -27,6 +27,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
 
         filepath = os.path.join(pivoted_data_directory_filepath,filename)
         if os.path.isfile(filepath):
+            print('Filtering: ',filename)
             
             # Read and sort the data file
             df = read_and_sort_data(filepath)
@@ -49,9 +50,9 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
             
             # Categorize data into good or bad based on the min_total_dates_ratio criterion
             if maintained_dates_ratio > min_total_dates_ratio:
-                good_dfs[filename.split('.')[0]] = df
+                good_dfs[filename.split('.')[0]] = df.loc[masked_df.index]
             else:
-                bad_dfs[f"{filename.split('.')[0]}: {maintained_dates_ratio}"] = df
+                bad_dfs[f"{filename.split('.')[0]}: {maintained_dates_ratio}"] = df.loc[masked_df.index]
     
     return good_dfs,bad_dfs
 
@@ -89,7 +90,7 @@ def rank_data(df:pd.DataFrame, n_quantiles:int, type_=['high','low']):
             ranks_list.append(pd.qcut(row,n_quantiles,duplicates='drop',labels=labels))
         except ValueError:
             failed_to_rank.append(i)
-    print('Failed to rank:\n',failed_to_rank)
+    print('Failed to rank:\n',df.iloc[failed_to_rank].index.tolist())
     
     # Return ranked data as a dataframe
     return pd.DataFrame(np.array(ranks_list), index=df.index.delete(failed_to_rank), columns=df.columns)
