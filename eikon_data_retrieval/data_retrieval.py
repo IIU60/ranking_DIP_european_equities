@@ -71,7 +71,7 @@ def dfs_list_from_dir(dir_fp):
 
 #function to reconstruct a complete dataframe from a list of dataframes with missing values,
 #using fill-forward interpolation up to 7 days of data
-def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(2023,1,1),desired_type_of_dates:str='monthly', day_of_week:int=None):
+def reconstruction(dfs_list:list, start_date:tuple=(2000,1,1), end_date:tuple=(2023,1,1), desired_type_of_dates:str='monthly', day_of_week:int=None):
     types_of_dates = ['daily','weekly','first_of_month','monthly','yearly'] #list of known types of dates
     if desired_type_of_dates not in types_of_dates:
         raise ValueError('type_of_date: %s is not in %s'% (desired_type_of_dates,types_of_dates))
@@ -79,7 +79,7 @@ def reconstruction(dfs_list:list,start_date:tuple=(2000,1,1),end_date:tuple=(202
     concated_df = pd.concat(dfs_list) #concatenate dataframes into one
 
     processed_df = concated_df.replace(['NaN',''],pd.NA) #replace NaN and empty strings with pandas NA
-    processed_df = processed_df.dropna().drop_duplicates() #drop rows with NA or duplicate values
+    processed_df = processed_df.dropna().drop_duplicates(subset=['Date','Instrument']) #drop rows with NA or duplicate values
     processed_df['Date'] = processed_df.Date.apply(lambda x: x[:10]) #extract date from timestamp column
 
     pivoted_df = processed_df.pivot(index='Date',columns='Instrument',values=list(set(processed_df.columns)-set(['Date','Instrument']))[0]) #pivot table to rearrange instrument data by date
