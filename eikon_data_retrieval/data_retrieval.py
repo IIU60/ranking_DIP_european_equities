@@ -16,17 +16,19 @@ frequencies_dict = {
 }
 
 #function to download data for a specified field, using the Eikon API
-def vertical_download(field_name:str,field_function,instruments_list,parameters):
+def vertical_download(field_name:str,field_function,instruments_list,parameters,saving_directory_fp):
     
     i = 0
     while i != -1: #create unique directory for field data, even if one with the same name already exists
         try:
-            os.mkdir(field_name)
+            dir_to_save = os.path.join(saving_directory_fp,field_name)
+            os.mkdir(dir_to_save)
             i = -1
         except FileExistsError:
             field_name = f'{field_name.split("(")[0]}({i})'
             i += 1
-    os.mkdir(field_name+'/raw_data')
+    raw_data_dir_fp = dir_to_save + '/raw_data'        
+    os.mkdir(raw_data_dir_fp)
 
     fields = [field_function,f'{field_function}.date']
 
@@ -42,7 +44,7 @@ def vertical_download(field_name:str,field_function,instruments_list,parameters)
         except Exception:
             fails.append(instrument)
             continue
-        df.to_csv(f"{field_name}/raw_data/{instrument}.csv") #save data to CSV file
+        df.to_csv(f"{raw_data_dir_fp}/{instrument}.csv") #save data to CSV file
         dfs_list.append(df)
 
     #retry any failed downloads
@@ -54,7 +56,7 @@ def vertical_download(field_name:str,field_function,instruments_list,parameters)
                 fails.remove(instrument)
             except Exception:
                 continue
-            df.to_csv(f"{field_name}/raw_data/{instrument}.csv")
+            df.to_csv(f"{raw_data_dir_fp}/{instrument}.csv")
             dfs_list.append(df)
         print('Failed twice for:\n',fails)
 
@@ -122,7 +124,7 @@ def find_freq(freq,frequencies_dict):
 #using fill-forward interpolation for up to 12 months for extra-monthly data frequencies
 def download_indicators(fields_list:list,instruments_list:list,parameters:dict,saving_directory_fp:str):
     
-    os.chdir(fr'{saving_directory_fp}')
+    #os.chdir(fr'{saving_directory_fp}')
 
     start_date = tuple(map(int,parameters.get('SDate').split('-'))) #parse start date parameter
     end_date = tuple(map(int,parameters.get('EDate').split('-'))) #parse end date parameter
@@ -135,7 +137,7 @@ def download_indicators(fields_list:list,instruments_list:list,parameters:dict,s
         field_name = field_function.split('.')[-1]
         
         desired_type_of_dates = find_freq(freq,frequencies_dict) #determine desired type of dates based on frequency parameter
-        dfs_list = vertical_download(field_name,field_function,instruments_list,parameters) #download data for field and instruments
+        dfs_list = vertical_download(field_name,field_function,instruments_list,parameters,saving_directory_fp) #download data for field and instruments
         complete_df = reconstruction(dfs_list=dfs_list,start_date=start_date,end_date=end_date,desired_type_of_dates=desired_type_of_dates) #reconstruct complete dataframe from downloaded data
         
         if freq in frequencies_dict['yearly']: #fill any remaining gaps in extra-monthly data
