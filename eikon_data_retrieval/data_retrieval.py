@@ -18,19 +18,20 @@ frequencies_dict = {
 def vertical_download(field_name:str, field_function:str, instruments_list:list, parameters:dict ,saving_directory_fp:str,make_new_dir:bool=True):
     
     ek.set_app_key(os.environ['EIKON_APP_KEY']) #set Eikon API key
-    #if make_new_dir==True:    
-    i = 0
-    while i != -1: #create unique directory for field data, even if one with the same name already exists
-        try:
-            dir_to_save = os.path.join(saving_directory_fp, field_name)
-            os.mkdir(dir_to_save)
-            i = -1
-        except FileExistsError:
-            field_name = f'{field_name.split("(")[0]}({i})'
-            i += 1
-    raw_data_dir_fp = dir_to_save + '/raw_data'        
-    os.mkdir(raw_data_dir_fp)
-
+    if make_new_dir==True:    
+        i = 0
+        while i != -1: #create unique directory for field data, even if one with the same name already exists
+            try:
+                dir_to_save = os.path.join(saving_directory_fp, field_name)
+                os.mkdir(dir_to_save)
+                i = -1
+            except FileExistsError:
+                field_name = f'{field_name.split("(")[0]}({i})'
+                i += 1
+        raw_data_dir_fp = dir_to_save + '/raw_data'        
+        os.mkdir(raw_data_dir_fp)
+    else:
+        raw_data_dir_fp = saving_directory_fp
     fields = [field_function,f'{field_function}.date']
 
     print(f'Downloading {field_name}')
@@ -66,7 +67,7 @@ def vertical_download(field_name:str, field_function:str, instruments_list:list,
             dfs_list.append(df)
         print('Failed twice for:\n',fails)
 
-    return dfs_list, dir_to_save
+    return dfs_list, field_name
 
 
 #function to create a list of dataframes from CSV files in a specified directory
@@ -148,20 +149,32 @@ def download_indicators(fields_list:list, instruments_list:list, parameters:dict
         dfs_list, dir_name = vertical_download(field_name, field_function, instruments_list, parameters, saving_directory_fp) #download data for field and instruments
         complete_df = reconstruction(dfs_list=dfs_list, start_date=start_date, end_date=end_date, desired_type_of_dates=desired_type_of_dates) #reconstruct complete dataframe from downloaded data
         
-        complete_df.to_csv(f'{dir_name}/{field_name}.csv') #save complete dataframe to CSV file
+        complete_df.to_csv(f'{os.path.join(saving_directory_fp,dir_name,field_name)}.csv') #save complete dataframe to CSV file
         
         data_dict[field_name] = complete_df
     
     return data_dict
 
-#def continue_download(field_function:str, dir_fp:str, full_instruments_list:list, parameters:dict):
-#    already_downloaded = set(map(lambda x:x.strip('.csv'),os.listdir(os.path.join(dir_fp,'raw_data'))))
-#    instruments_list = list(set(full_instruments_list)-already_downloaded)
-#
-#    start_date = tuple(map(int,parameters.get('SDate').split('-'))) #parse start date parameter
-#    end_date = tuple(map(int,parameters.get('EDate').split('-'))) #parse end date parameter
-#    freq = parameters.get('Frq') #parse frequency parameter
 
+def continue_download(field_function:str, raw_data_dir_fp:str, full_instruments_list:list, parameters:dict):
+    already_downloaded_names = set(map(lambda x:x.strip('.csv'),os.listdir(raw_data_dir_fp)))
+    instruments_list = list(set(full_instruments_list)-already_downloaded_names)
+
+    already_downloaded_dfs_list = dfs_list_from_dir(raw_data_dir_fp)
+    start_date = tuple(map(int,parameters.get('SDate').split('-'))) #parse start date parameter
+    end_date = tuple(map(int,parameters.get('EDate').split('-'))) #parse end date parameter
+    freq = parameters.get('Frq') #parse frequency parameter
+
+    field_name = field_function.split('.')[-1]
+
+    desired_type_of_dates = find_freq(freq, frequencies_dict) #determine desired type of dates based on frequency parameter
+    
+    dfs_list, _ = vertical_download(field_name, field_function, instruments_list, parameters, raw_data_dir_fp, make_new_dir=False) #download data for field and instruments
+    dfs_list.extend(already_downloaded_dfs_list)
+
+    complete_df = reconstruction(dfs_list=dfs_list, start_date=start_date, end_date=end_date, desired_type_of_dates=desired_type_of_dates) #reconstruct complete dataframe from downloaded data
+    
+    complete_df.to_csv(f'{raw_data_dir_fp}/../{field_name}.csv') #save complete dataframe to CSV file
 
 ## add makedir parameter to vertical download
 ## if False just download into specified directory
