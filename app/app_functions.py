@@ -33,7 +33,7 @@ def filter_data(pivoted_data_directory_filepath, min_stocks_per_date_ratio=0.0, 
             df = read_and_sort_data(filepath)
 
             # If expected_stocks_per_date is not passed in as an argument, set it as the number of columns in df
-            if expected_stocks_per_date == 1:
+            if expected_stocks_per_date == 0:
                 expected_stocks_per_date = df.shape[1]
 
             # Apply mask to the data, if provided
