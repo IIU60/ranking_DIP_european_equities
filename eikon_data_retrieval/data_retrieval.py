@@ -156,6 +156,7 @@ def download_indicators(fields_list:list, instruments_list:list, parameters:dict
     return data_dict
 
 
+#function to identify an incomplete download from a 'raw_data' directory, download the remanining files, and call reconstruction in the same way 'download_idnicators'does
 def continue_download(field_function:str, raw_data_dir_fp:str, full_instruments_list:list, parameters:dict):
     already_downloaded_names = set(map(lambda x:x.strip('.csv'),os.listdir(raw_data_dir_fp)))
     instruments_list = list(set(full_instruments_list)-already_downloaded_names)
@@ -175,6 +176,3 @@ def continue_download(field_function:str, raw_data_dir_fp:str, full_instruments_
     complete_df = reconstruction(dfs_list=dfs_list, start_date=start_date, end_date=end_date, desired_type_of_dates=desired_type_of_dates) #reconstruct complete dataframe from downloaded data
     
     complete_df.to_csv(f'{raw_data_dir_fp}/../{field_name}.csv') #save complete dataframe to CSV file
-
-## add makedir parameter to vertical download
-## if False just download into specified directory
