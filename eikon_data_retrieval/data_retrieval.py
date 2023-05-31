@@ -65,7 +65,7 @@ def vertical_download(field_name:str, field_function:str, instruments_list:list,
             fails.remove(instrument)
             df.to_csv(f"{raw_data_dir_fp}/{instrument}.csv")
             dfs_list.append(df)
-        print('Failed twice for:\n',fails)
+        print(f'Failed twice for: {len(fails)}\n{fails}\n')
 
     return dfs_list, field_name
 
