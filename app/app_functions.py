@@ -121,7 +121,7 @@ def get_returns(ranked_df:pd.DataFrame, prices_df:pd.DataFrame, n_quantiles:int,
     returns_df = prices_df.pct_change(rets_period,limit=1)
 
     # Create a dataframe to hold quantile returns
-    quantiles_df = pd.DataFrame(columns=['equiponderado'])
+    quantiles_df = pd.DataFrame(columns=['equiponderado'], dtype=float)
 
     # Iterate over each quantile
     failed_dates = []
