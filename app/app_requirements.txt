@@ -46,7 +46,7 @@ gitpython==3.1.31
     # via streamlit
 html5lib==1.1
     # via yfinance
-idna==2.1 
+idna==2.10 
     #original was v3.4 but is limited to avoid conficts with eikon package requirements
     # via requests
 importlib-metadata==6.6.0
