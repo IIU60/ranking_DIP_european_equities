@@ -1,0 +1,6 @@
+numpy==1.24.3
+pandas==1.5.2
+plotly==5.13.1
+QuantStats==0.0.59
+streamlit==1.23.1
+ta==0.10.2
