@@ -67,7 +67,7 @@ if st.session_state.start_app == True:
             with st.form('weighted_indicator_form'):
                 weighted_indicator_name = st.text_input('Indicator Name:')
                 #creating and showing the dataframe with available indicators
-                weighted_ratio_weights_df = st.experimental_data_editor(pd.DataFrame(dict(Factor=st.session_state.data_dict.keys(), Weight=0.0, Type='-')),width=600)
+                weighted_ratio_weights_df = st.data_editor(pd.DataFrame(dict(Factor=st.session_state.data_dict.keys(), Weight=0.0, Type='-')),width=600)
                 
                 weighted_indicator_form_button = st.form_submit_button()
            
