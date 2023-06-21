@@ -41,7 +41,7 @@
 
 
 
-# `		`<a name="_toc134614754"></a>Instalar en una nueva Maquina
+# <a name="_toc134614754"></a>Instalar en una nueva Maquina
 Los notebooks de descarga, para correr, necesitan tener todos los ficheros ‘.py’ contenidos en la carpeta ‘eikon\_data\_retrieval’ del repositorio de GitHub. El notebook download\_calcs\_ranking.ipynb a demás necesita el los ficheros app\_functions.py y custom\_calculations.py ubicados en la carpeta ‘app’ del repositorio. También necesita la versión de Python 3.10.9 y cumplir con los requisitos de los paquetes supletorios especificados en ‘data\_requirements.txt’. La forma de cumplir con estos requisitos es opcional (uno se puede descargar el código y los paquetes de muchas formas), aunque aquí se detalla cómo hacerlo con GitHub Desktop y Anaconda, por ser los más simples. La última versión del cliente de Eikon también debe estar instalada en la máquina.
 
 **Pagina descarga de Eikon: <https://eikon.refinitiv.com/index.html>** 
@@ -153,18 +153,18 @@ Eikon tiene un paquete de Python que, si se han seguido los pasos del primer apa
 1. El programa debe identificarse con la llave de la aplicación
 
 El paso 2 se hace así:
-
+``` python
 from dotenv import load\_dotenv
 
 import os
 
-load\_dotenv(r'..\.env') #load environment variables from .env file
+load_dotenv(r'..\.env') #load environment variables from .env file
 
 import eikon as ek
 
-ek.set\_app\_key(os.environ['EIKON\_APP\_KEY']) #set Eikon API key
-
-ek.set\_app\_key(‘LLAVE\_DE\_APPLICACION’) es la forma de identificar al programa. Lo anterior es para importar la llave desde el fichero .env, lo que es innecesario si no se usa dicha barrera de seguridad.
+ek.set_app_key(os.environ['EIKON_APP_KEY']) #set Eikon API key
+```
+```ek.set_app_key(‘LLAVE_DE_APPLICACION’)``` es la forma de identificar al programa. Lo anterior es para importar la llave desde el fichero .env, lo que es innecesario si no se usa dicha barrera de seguridad.
 
 El paquete de Eikon contiene funciones para descargar noticias y demás, pero para la descarga de indicadores financieros la función más útil es ek.get\_data(), cuya firma es así:
 
