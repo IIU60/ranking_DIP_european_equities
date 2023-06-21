@@ -155,13 +155,10 @@ Eikon tiene un paquete de Python que, si se han seguido los pasos del primer apa
 El paso 2 se hace así:
 ``` python
 from dotenv import load\_dotenv
-
 import os
-
-load_dotenv(r'..\.env') #load environment variables from .env file
-
 import eikon as ek
 
+load_dotenv(r'..\.env') #load environment variables from .env file
 ek.set_app_key(os.environ['EIKON_APP_KEY']) #set Eikon API key
 ```
 ```ek.set_app_key(‘LLAVE_DE_APPLICACION’)``` es la forma de identificar al programa. Lo anterior es para importar la llave desde el fichero .env, lo que es innecesario si no se usa dicha barrera de seguridad.
@@ -173,17 +170,13 @@ El paquete de Eikon contiene funciones para descargar noticias y demás, pero pa
 La documentación del resto de funciones se halla en el próximo hipervínculo: <https://developers.refinitiv.com/en/api-catalog/eikon/eikon-data-api/documentation#eikon-data-ap-is-for-python-reference-guide> 
 
 Para el ejemplo del Volumen diario desde comienzo de año, la llamada se hace así:
-
-df, err = ek.get\_data(instruments='NESN.S',
-
-`            `fields=['TR.Volume','TR.Volume.date'],
-
-`            `parameters={'SDate':'2023-01-01',
-
-`                        `'EDate':'2023-05-09',
-
-`                        `'Frq':'D'})
-
+```python
+df, err = ek.get_data(instruments='NESN.S',
+                      fields=['TR.Volume','TR.Volume.date'],
+                      parameters={'SDate':'2023-01-01'
+                                  'EDate':'2023-05-09',
+                                  'Frq':'D'})
+```
 ![](Aspose.Words.75dcd0a9-8bb4-4282-a6ea-30ff34f82ec6.020.png)Lo que devuelve:
 
 ‘df’ es la variable a la que se asigna el pd.DataFrame devuelto por la función y ‘err’ es donde se asigna cualquier error que ocurra en la llamada.
