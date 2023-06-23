@@ -131,7 +131,7 @@ Por ejemplo: supongamos que queremos descargar el volumen de mercado para Nestl�
 
 Cada campo tiene un apartado con una descripción y sus parámetros predeterminados, además de una pestaña adicional para modificar los parámetros. Generalmente las funciones con series temporales tienen ‘TR.’ de prefijo.
 
-![](Images/descarga_de_datos_images/descarga_de_datos_images.016.png)  ![](Images/descarga_de_datos_images/descarga_de_datos_images.017.png)
+<img src="Images/descarga_de_datos_images/descarga_de_datos_images.016.png" height="200">  <img src="Images/descarga_de_datos_images/descarga_de_datos_images.017.png" height="200">
 
 El valor de esto es poder investigar los parámetros que requiere cada campo y las distintas opciones con las que se puede llamar su función.  Abriendo el drop-down con la letra ‘D’ se muestra un menú con todos los valores que se pueden pasar al parámetro de frecuencias (‘Frq’). Abriendo el menú de Output se ven todos los sufijos que se pueden añadir a la función para descargar información adicional sobre cada dato; cosas como la fecha, fecha de publicación/fecha de calculo, divisa, etc.
 
