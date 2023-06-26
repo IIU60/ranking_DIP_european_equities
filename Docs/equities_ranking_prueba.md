@@ -1,4 +1,4 @@
-﻿DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING
+# ﻿DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING
 
 # <a name="_hlk487785372"></a>Tabla de contenido
 1. [Tabla de contenido](#tabla-de-contenido)
