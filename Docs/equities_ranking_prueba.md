@@ -1,22 +1,21 @@
-# ﻿DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING
+﻿# ﻿DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING <!-- omit in toc -->
 
-# <a name="_hlk487785372"></a>Tabla de contenido
-1. [Tabla de contenido](#tabla-de-contenido)
-2. [Instalar en una nueva Maquina](#instalar-en-una-nueva-maquina)
+# <a name="_hlk487785372"></a>Tabla de contenido<!-- omit in toc -->
+
+1. [Instalar en una nueva Maquina](#instalar-en-una-nueva-maquina)
    1. [Clonar el repositorio al disco](#clonar-el-repositorio-al-disco)
    2. [Crear Entorno Virtual e Instalar paquetes](#crear-entorno-virtual-e-instalar-paquetes)
-3. [Corriendo el Programa](#corriendo-el-programa)
-4. [La Plataforma](#la-plataforma)
+2. [Corriendo el Programa](#corriendo-el-programa)
+3. [La Plataforma](#la-plataforma)
    1. [Formulario de Parámetros Inicial](#formulario-de-parámetros-inicial)
-   2. [Index constituency filtering:](#index-constituency-filtering)
-   3. [Apartado de Gráficos](#apartado-de-gráficos)
+      1. [Index constituency filtering:](#index-constituency-filtering)
+   2. [Apartado de Gráficos](#apartado-de-gráficos)
       1. [Botones de descarga de ficheros](#botones-de-descarga-de-ficheros)
-   4. [Botones de la barra lateral](#botones-de-la-barra-lateral)
+   3. [Botones de la barra lateral](#botones-de-la-barra-lateral)
       1. [Create Multi-factor Indicator](#create-multi-factor-indicator)
       2. [Create Custom Indicator](#create-custom-indicator)
-      3. [La documentación actual:](#la-documentación-actual)
-      4. [Download Indicator](#download-indicator)
-5. [Lectura y Uso de la Terminal](#lectura-y-uso-de-la-terminal)
+      3. [Download Indicator](#download-indicator)
+4. [Lectura y Uso de la Terminal](#lectura-y-uso-de-la-terminal)
       1. [Reiniciar el Servidor](#reiniciar-el-servidor)
       2. [Situaciones en las que hay que reiniciar](#situaciones-en-las-que-hay-que-reiniciar)
 
@@ -107,12 +106,14 @@ Para correr el programa hay que:
 Una vez hecho esto saldrá lo próximo en la terminal lo cual son las ubicaciones donde se encuentra la plataforma. Se debería abrir automáticamente una pestaña en el navegador predeterminando con el URL local, pero si no, se deberá acceder a él manualmente. 
 
 <kbd>![](Images/equities_ranking_images/equities_ranking_images.010.png)</kbd>
+
 # <a name="_toc134438913"></a>La Plataforma
 Esta plataforma sirve para identificar correlaciones entre los indicadores financieros de un universo de empresas y los cambios en precio de las mismas. Es decir: sirve para comprender si un indicador es un buen predictor de que los precios de una acción van a subir o bajar. Esto se hace clasificando el universo en cuantiles en cada momento del tiempo, según el orden de valores, y calculando la rentabilidad media de cada agrupación en cada momento. Así se entiende el comportamiento de cada cuantil, y, si se establece una relación progresiva entre las rentabilidades medias de los cuantiles, se puede decir que el indicador en cuestión esta correlacionado con el precio.
 
 Al lanzar el programa, la página tiene el próximo aspecto. Este cambiará, y se iniciará del todo la plataforma, al entregar el formulario de parámetros visible en el apartado izquierdo de la página.
 
 <kbd>![](Images/equities_ranking_images/equities_ranking_images.011.png)</kbd>
+
 ## <a name="_toc134438914"></a>Formulario de Parámetros Inicial
 **Number of quantiles:**
 
@@ -142,7 +143,7 @@ Aunque hay redundancias en el programa para prevenir errores de formato (formato
 
 Esta es la ruta absoluta al fichero de precios. Con este fichero el programa calcula las rentabilidades de cada acción y por tanto de las agrupaciones de acciones. <u>Este fichero debe contener una periodicidad mensual ya que este es el periodo esperado por el programa.</u>
 
-## Index constituency filtering:
+### Index constituency filtering:
 
 *Este es un apartado de parámetros opcionales para filtrar los datos según la membresía de las acciones a un índice.*
 
@@ -223,7 +224,7 @@ Este ejemplo muestra el RSI del Enterprise Value a 2 meses multiplicado por una 
 También aquí es recomendable usar un nombre que detalle la función del indicador.
 
 Al entregar el formulario se calcula la nueva tabla de valores y se hace automáticamente disponible en la lista de datos de la plataforma.
-### <a name="_toc134438920"></a>La documentación actual:
+### <a name="_toc134438920"></a>La documentación actual: <!-- omit in toc -->
 **rate_of_change**
 ``` python
 '''
