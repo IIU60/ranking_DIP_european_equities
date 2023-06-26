@@ -1,23 +1,14 @@
 import aspose.words as aw
 import os
 
-working_doc_fp = r'descarga de datos images.docx'
-#working_doc_fp = r'descarga de datos truncated.docx'
-#working_doc_fp = r'Documentacion descarga de datos eikon.docx'
-#working_doc_fp = r'Documentacion equities ranking platform.docx'
-
-clean_doc_name = working_doc_fp.split('.')[0].replace(' ','_')
-
+working_doc_fp = r'Docs/.docx and scripts/equities_ranking images.docx'
 docs_dir_fp = r'c:\Users\hugo.perezdealbeniz\Documents\GitHub\ranking_DIP_european_equities\Docs'
+
+clean_doc_name = os.path.splitext(os.path.basename(working_doc_fp))[0].lower().replace(' ','_')
 saving_dir_name = os.path.join(docs_dir_fp,'Images', clean_doc_name)
 
-try:
-    os.mkdir(docs_dir_fp+'/Images')
-except FileExistsError:
-    try:
-        os.mkdir(saving_dir_name)
-    except FileExistsError:
-        pass
+if not os.path.exists(saving_dir_name):
+    os.makedirs(saving_dir_name)
 
 doc = aw.Document(working_doc_fp)
 
