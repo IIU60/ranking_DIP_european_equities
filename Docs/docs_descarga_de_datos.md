@@ -10,14 +10,15 @@
 2. [Uso de Eikon](#uso-de-eikon)
 3. [Hacer llamadas con Python](#hacer-llamadas-con-python)
 4. [Uso de los Notebooks de Descarga](#uso-de-los-notebooks-de-descarga)
-   1. [mass_download.ipynb](#mass_downloadipynb)
-   2. [download_calcs_ranking.ipynb](#download_calcs_rankingipynb)
-5. [Las funciones de Descarga - data_retrieval.py](#las-funciones-de-descarga---data_retrievalpy)
-   1. [vertical_download](#vertical_download)
+   1. [mass\_download.ipynb](#mass_downloadipynb)
+   2. [download\_calcs\_ranking.ipynb](#download_calcs_rankingipynb)
+   3. [index\_constituents\_mask.ipynb](#index_constituents_maskipynb)
+5. [Las funciones de Descarga - data\_retrieval.py](#las-funciones-de-descarga---data_retrievalpy)
+   1. [vertical\_download](#vertical_download)
    2. [reconstruction](#reconstruction)
-   3. [dfs_list_from_dir](#dfs_list_from_dir)
-   4. [download_indicators](#download_indicators)
-   5. [continue_download](#continue_download)
+   3. [dfs\_list\_from\_dir](#dfs_list_from_dir)
+   4. [download\_indicators](#download_indicators)
+   5. [continue\_download](#continue_download)
 6. [Errores de Descarga Conocidos](#errores-de-descarga-conocidos)
       1. [Failed to decode response to json:](#failed-to-decode-response-to-json)
 
@@ -304,6 +305,22 @@ ranks = af.rank_data(custom_calc_df,n_quantiles,'high').iloc[-1,:]
 <kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.026.png)</kbd>
 
 ## index_constituents_mask.ipynb
+
+Este notebook sirve para generar los ficheros de filtrado de membresía que se pueden usar en la plataforma (mediante "Filepath to index constituency mask"). Como explica la documentación de la plataforma, son ficheros con valores booleanos (Verdadero o Falso) que indican si un activo forma parte del índice en cuestión en cada fecha de los datos. Con ellos se puede eliminar el *suvivorship bias* que conllevaría rankear solamente los datos históricos de los miembros actuales de un índice. Descargando los datos históricos de todos los activos que han formado parte de índice en algún momento, y después filtrando con un fichero de filtro, se obtiene un verdadero backtest de la estrategia deseada.
+
+Después de la primera celda, donde se importan las librerías necesarias y se establece la llave de acceso de Eikon, hay una celda con parámetros:
+```python
+sdate = '2000-01-01'
+edate = '2023-01-01'
+index_code = '.SPX'
+```
+Aquí, como indica el comentario de la celda, hay que cambiar los parámetros a los valores deseados de fecha de inicio, fecha fin, y el código de Eikon del índice deseado. El código del índice se consigue buscando el nombre del índice en la aplicación de Eikon y comprobando que la página del valor tiene una pestaña de "constituents". Por ejemplo, `".SP500"` no es un código valido, a pesar de tener página de índice, pero `".SPX"` sí que lo es.
+
+En la siguiente celda hay que especificar dos rutas. `json_fp` será donde se guarde el filtro en formato .json (un diccionario de fechas con las listas de miembros), y `csv_fp` que es donde se guardará el filtro útil para la plataforma de ranking. Es imprescindible detallar `json_fp` incluso si no se desea guardar este fichero por cómo funciona el código del notebook. Después de obtener el filtro final (el .csv) se puede borrar el .json si se desea.
+
+Después de definir los parámetros, lo único que hay que hacer es ir corriendo el notebook celda a celda, siguiendo los pasos indicados por los comentarios. La mayoría de comentarios son meras explicaciones de lo que hace el código pero hay alguno que pide hacer algo, e.g. `#comprobar que todo tiene buena pinta (mirar número de filas, por ejemplo)` en la celda número 6.
+
+Una vez han corrido todas las celdas correctamente se encontrará el filtro en la ruta `csv_fp` con el cual se puede hacer lo que uno quiera...
 
 
 # <a name="_toc134614765"></a>Las funciones de Descarga - data_retrieval.py
