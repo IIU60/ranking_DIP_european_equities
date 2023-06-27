@@ -129,7 +129,7 @@ Tras esto la aplicación de Eikon está preparada para usar la API.
 
 Por motivos de seguridad las llaves de aplicación de Eikon no deben ser compartidas. Para evitar fijarlas en el código y que se compartan sin querer, este programa hace uso de un paquete llamado `python-dotenv` el cual permite crear y añadir variables globales al entorno virtual dentro de un fichero `.env`. Este fichero y sus contenidos deben ser creados en cada máquina y nunca ser compartidos.
 
-Para hacer uso de esta funcionalidad simplemente hay que crear un fichero llamado .env y pegar la llave de Eikon en una variable llamada `EIKON_APP_KEY=[Tu llave]` (**Ojo. Sin espacios**):
+Para hacer uso de esta funcionalidad simplemente hay que crear un fichero llamado .env y pegar la llave de Eikon en una variable llamada `EIKON_APP_KEY=Tu llave` (**Ojo. Sin espacios**):
 
 <kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.013.png)</kbd>
 
@@ -220,6 +220,8 @@ Para descargar datos, ambos se nutren de las funciones escritas en `'eikon_data_
 
 En estos notebooks no hace falta incluir el paso de identificación de Eikon ya que lo hace `data_retrieval.py` de forma automática.
 
+Hay tambien un tercer notebook, llamado `index_constituents_mask.ipynb`, que sirve para crear los filtros de membresia de un indice.
+
 ## <a name="_toc134614763"></a>mass_download.ipynb
 
 Después de importar los paquetes necesarios el notebook tiene estas tres celdas:
@@ -300,6 +302,8 @@ ranks = af.rank_data(custom_calc_df,n_quantiles,'high').iloc[-1,:]
 ¡Ahora ya son accesibles las listas de tickers de cada cuantil!	
 
 <kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.026.png)</kbd>
+
+## index_constituents_mask.ipynb
 
 
 # <a name="_toc134614765"></a>Las funciones de Descarga - data_retrieval.py
