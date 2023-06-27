@@ -43,11 +43,23 @@ Tras instalar ambas plataformas:
 <kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.001.png)</kbd>
 
 3. Clonar al disco local:
-   1. Buscar y seleccionar el repositorio (en la barra de búsqueda si se tiene acceso, y si no, pegando el URL del repositorio público en la pestaña de ‘URL’)
-   2. **Importante** copiar la ruta local de guardado
-   3. Hacer clic en el botón de clonar
+
+<table width="100%">
+  <tr>
+  <td VALIGN=TOP>
    
-<kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.002.png)</kbd>
+   1. Buscar y seleccionar el repositorio (en la barra de búsqueda si se tiene acceso, y si no, pegando el URL del repositorio público en la pestaña de ‘URL’)
+     
+   2. **Importante** copiar la ruta local de guardado
+
+   3. Hacer clic en el botón de clonar
+
+  </td>
+  <td width="50%">
+     <kbd><img src=Images/descarga_de_datos_images/descarga_de_datos_images.002.png></kbd>
+  </td>
+  </tr>
+</table>
 
 4. En la página del repositorio, actualizar el código con el botón ‘Fetch origin’, si ha habido algún cambio al programa.
 
