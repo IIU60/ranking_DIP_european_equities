@@ -10,14 +10,14 @@
 2. [Uso de Eikon](#uso-de-eikon)
 3. [Hacer llamadas con Python](#hacer-llamadas-con-python)
 4. [Uso de los Notebooks de Descarga](#uso-de-los-notebooks-de-descarga)
-   1. [mass\_download.ipynb](#mass_downloadipynb)
-   2. [download\_calcs\_ranking.ipynb](#download_calcs_rankingipynb)
-5. [Las funciones de Descarga - data\_retrieval.py](#las-funciones-de-descarga---data_retrievalpy)
-   1. [vertical\_download](#vertical_download)
+   1. [mass_download.ipynb](#mass_downloadipynb)
+   2. [download_calcs_ranking.ipynb](#download_calcs_rankingipynb)
+5. [Las funciones de Descarga - data_retrieval.py](#las-funciones-de-descarga---data_retrievalpy)
+   1. [vertical_download](#vertical_download)
    2. [reconstruction](#reconstruction)
-   3. [dfs\_list\_from\_dir](#dfs_list_from_dir)
-   4. [download\_indicators](#download_indicators)
-   5. [continue\_download](#continue_download)
+   3. [dfs_list_from_dir](#dfs_list_from_dir)
+   4. [download_indicators](#download_indicators)
+   5. [continue_download](#continue_download)
 6. [Errores de Descarga Conocidos](#errores-de-descarga-conocidos)
       1. [Failed to decode response to json:](#failed-to-decode-response-to-json)
 
@@ -176,7 +176,7 @@ Eikon tiene un paquete de Python que, si se han seguido los pasos del primer apa
 
 El paso 2 se hace así:
 ``` python
-from dotenv import load\_dotenv
+from dotenv import load_dotenv
 import os
 import eikon as ek
 
@@ -293,7 +293,7 @@ Con los datos finales calculados, se puede pasar el DataFrame a la función de r
 ```python
 n_quantiles = 10
 
-ranks = af.rank\_data(custom\_calc\_df,n\_quantiles,'high').iloc[-1,:]
+ranks = af.rank_data(custom_calc_df,n_quantiles,'high').iloc[-1,:]
 ```
 `.iloc[-1,:]` coge la última fila de la tabla – la fecha más reciente (debería ser la actual).
 
@@ -302,7 +302,7 @@ ranks = af.rank\_data(custom\_calc\_df,n\_quantiles,'high').iloc[-1,:]
 <kbd>![](Images/descarga_de_datos_images/descarga_de_datos_images.026.png)</kbd>
 
 
-# <a name="_toc134614765"></a>Las funciones de Descarga - data\_retrieval.py
+# <a name="_toc134614765"></a>Las funciones de Descarga - data_retrieval.py
 
 El fichero `data_retrieval.py` contiene todas las funciones usadas por los notebooks para hacer llamadas a Eikon y limpiar + procesar los datos. Esta sección solo documenta las partes del fichero que pueden ser relevantes para el uso de sus funciones en los notebooks de descarga (en caso de haber algún error usando su configuración actual). En caso de desear comprender todas las funciones con exactitud, el fichero está adecuadamente documentado con comentarios, lo que debería ser suficiente para su entendimiento.
 
