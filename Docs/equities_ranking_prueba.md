@@ -1,6 +1,6 @@
-﻿# ﻿DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING <!-- omit in toc -->
+﻿# DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING <!-- omit in toc -->
 
-# <a name="_hlk487785372"></a>Tabla de contenido<!-- omit in toc -->
+# <a name="_hlk487785372"></a>Tabla de contenido <!-- omit in toc -->
 
 1. [Instalar en una nueva Maquina](#instalar-en-una-nueva-maquina)
    1. [Clonar el repositorio al disco](#clonar-el-repositorio-al-disco)
