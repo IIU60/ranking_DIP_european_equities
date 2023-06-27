@@ -1,4 +1,4 @@
-﻿# DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING <!-- omit in toc -->
+# DOCUMENTACIÓN PLATAFORMA EQUITIES RANKING <!-- omit in toc -->
 
 # <a name="_hlk487785372"></a>Tabla de contenido <!-- omit in toc -->
 
@@ -37,20 +37,23 @@ Tras instalar ambas plataformas:
 <kbd>![](Images/equities_ranking_images/equities_ranking_images.001.png)</kbd>
 
 3. Clonar al disco local:
-<div style="text-align: left; display: grid; grid-template-columns: 1fr 1fr;">
-   <div>
 
-   1. Buscar y seleccionar el repositorio (en la barra de búsqueda si se tiene acceso, y si no, pegando el URL del repositorio público en la pestaña de ‘URL’)
-   1. **Importante** copiar la ruta local de guardado
-   2. Hacer clic en el botón de clonar
+<table width="100%">
+  <tr>
+  <td VALIGN=TOP>
    
-   </div>
-  <div>
+   1. Buscar y seleccionar el repositorio (en la barra de búsqueda si se tiene acceso, y si no, pegando el URL del repositorio público en la pestaña de ‘URL’)
+     
+   2. **Importante** copiar la ruta local de guardado
 
-   <kbd><img src=Images/equities_ranking_images/equities_ranking_images.002.png></kbd>
+   3. Hacer clic en el botón de clonar
 
-  </div>
-</div>
+  </td>
+  <td width="50%">
+     <kbd><img src=Images/equities_ranking_images/equities_ranking_images.002.png></kbd>
+  </td>
+  </tr>
+</table>
 
 4. En la pagina del repositorio, actualizar el código con el botón ‘Fetch origin’, si ha habido algún cambio al programa desde la última vez que se instaló el código.
 
