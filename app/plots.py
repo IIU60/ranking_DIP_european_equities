@@ -91,12 +91,54 @@ def plot_sharpe(df, indicator_name='',*args,**kwargs):
     fig.update_layout(title=indicator_name + ' - Ratio Sharpe',xaxis_title=None)
     return fig
 
+
+def infer_inferred_freqs(data:pd.DataFrame|pd.Series) -> str:
+    try:
+        all_samples = np.lib.stride_tricks.sliding_window_view(data.index, window_shape=10)
+    except ValueError as x:
+        if x.args[0] == 'window shape cannot be larger than input array shape':
+            raise ValueError('Insufficient data to infer frequency. Must be longer than 10')
+        raise x
+    
+    rand_indices = np.unique(np.random.randint(0, all_samples.shape[0], size=30))
+
+    samples = all_samples[rand_indices]
+
+    freqs = pd.Series(list(samples)).apply(pd.infer_freq)
+
+    freqs_count = freqs.value_counts().sort_values(ascending=False)
+
+    if len(freqs_count) == 0:
+        raise ValueError('Inferred data frequency is None')
+    elif len(freqs_count)>1:
+        if freqs_count.duplicated(keep='first').iloc[1]==True:
+            raise ValueError('Inferred data frequency is Duplicated')
+
+    return freqs_count.index[0]
+
+
 # Define a function to plot the number of non-null values in a DataFrame over time.
 def notna_plot(df, relative=False):
-    # Create a DataFrame with the number of non-null values in each row of the DataFrame.
+
+    infered_freq = infer_inferred_freqs(df)
+
+    filled_df = df.asfreq(infered_freq)
+
     if relative == True:
-        data = df.notna().sum(axis=1)/len(df.columns)
+        na_counts = filled_df.notna().sum(axis=1)/len(filled_df.columns)
     else:
-        data = df.notna().sum(axis=1)
-    fig = px.line(data)
+        na_counts = filled_df.notna().sum(axis=1)
+
+    changes = (na_counts==0).astype(int).diff()
+
+    na_ranges = np.array((changes.iloc[changes.index.get_indexer(changes.loc[changes==1].index)-1].index,changes.loc[changes==-1].index)).T
+
+    fig = px.line(na_counts)
+
+    for start, end in na_ranges.astype(str):
+
+        fig.add_vrect(x0=start, x1=end, fillcolor='red', opacity=0.5, line_width=0)
+    
+    fig.update_traces(line_color='#000000')
+
     return fig
