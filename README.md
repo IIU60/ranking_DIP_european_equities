@@ -1,12 +1,11 @@
 # Equities Ranking Platform
 
-**Live Streamlit App:** [Add deployment link here]( )
+**Live Streamlit App:** [Link](https://stock-ranking-platform.streamlit.app)
 
 ## Overview
 This repository houses the quantitative equity ranking workstation developed by the Quantitative Department at A&G Banca Privada. The platform combines a Streamlit dashboard with reproducible data-retrieval utilities that source factor indicators from Refinitiv Eikon. Analysts can explore cross-sectional factor behaviour, craft composite scores, and monitor out-of-sample performance across European equity universes.
 
-![Dashboard preview](path-to-dashboard-image.png)
-> _Replace `path-to-dashboard-image.png` with the actual image file you would like to showcase._
+![Dashboard preview](Docs/Images/Screenshot%202025-10-07%20at%2004.59.01.png)
 
 ## Explore the dashboard
 The Streamlit app (located in [`app/`](app/)) is the heart of the project. Key areas of the interface include:
@@ -47,7 +46,7 @@ Spanish-language guides in the [`Docs/`](Docs/) folder walk through installation
 3. Install application dependencies:
    - `pip install -r app/app_requirements.txt` for the Streamlit interface
    - `pip install -r eikon_data_retrieval/data_requirements.txt` for the Eikon download scripts
-4. (Optional) Duplicate the `nominal_*_requirements.txt` files if you need a lighter dependency set for experimentation.
+4. (Optional) Duplicate the `requirements.txt` file if you need a lighter dependency set for experimentation.
 
 ### Configure Eikon access
 1. Install the Refinitiv Eikon desktop application and log in with your credentials.
