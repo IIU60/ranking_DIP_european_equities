@@ -24,8 +24,11 @@ with st.sidebar:
         n_quantiles = st.number_input('Number of Quantiles:', min_value=1, value=10)
         min_stocks_per_date_ratio = st.number_input('Minimum stocks per date ratio:', min_value=0.0, max_value=1.0, value=0.8)
         min_total_dates_ratio = st.number_input('Minimum total dates ratio:', min_value=0.0, max_value=1.0, value=0.8)
-        data_directory_filepath = st.text_input('Filepath to data directory:',key='data_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo')
-        prices_csv_filepath = st.text_input('Filepath to prices csv:',key='prices_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo\PriceClose.csv')
+        data_directory_filepath = st.text_input('Filepath to data directory:', key='data_fp')
+        prices_csv_filepath = st.text_input('Filepath to prices csv:', key='prices_fp')
+        st.warning(
+            'Provide local data paths above or use the option below to generate a sample dataset for quick exploration.'
+        )
         use_sample_data = st.checkbox('Generate sample financial data', value=False)
 
         #Index constituency filtering parameters
