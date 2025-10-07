@@ -1,10 +1,150 @@
 import os
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 import pandas as pd
 import streamlit as st
 
 import app_functions as af
 import plots as pl
 import custom_calculations as calcs
+
+
+def _generate_bounded_series(rng: np.random.Generator, months: int, base: float, drift: float, noise_scale: float, lower: Optional[float], upper: Optional[float]) -> np.ndarray:
+    values = [base]
+    for _ in range(1, months):
+        new_val = values[-1] + drift + rng.normal(0, noise_scale)
+        if lower is not None:
+            new_val = max(lower, new_val)
+        if upper is not None:
+            new_val = min(upper, new_val)
+        values.append(new_val)
+    return np.array(values)
+
+
+def _generate_growing_series(rng: np.random.Generator, months: int, base: float, monthly_drift: float, noise_scale: float) -> np.ndarray:
+    shocks = monthly_drift + rng.normal(0, noise_scale, size=months)
+    return base * np.exp(shocks.cumsum())
+
+
+def generate_sample_financial_data(num_stocks: int = 50, years: int = 25, seed: int = 42) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame]:
+    """Create a simulated financial dataset for demonstration purposes."""
+    rng = np.random.default_rng(seed)
+    months = years * 12
+    end_date = pd.Timestamp.today().to_period('M').to_timestamp('M')
+    date_index = pd.date_range(end=end_date, periods=months, freq='M')
+    tickers = [f'STK{i:03d}' for i in range(1, num_stocks + 1)]
+
+    metric_specs = [
+        {
+            'name': 'ebitda',
+            'base_range': (150, 500),
+            'annual_drift_range': (0.03, 0.08),
+            'noise_scale': 0.06,
+            'bounds': (None, None),
+            'is_ratio': False,
+        },
+        {
+            'name': 'revenue',
+            'base_range': (500, 1500),
+            'annual_drift_range': (0.04, 0.1),
+            'noise_scale': 0.05,
+            'bounds': (None, None),
+            'is_ratio': False,
+        },
+        {
+            'name': 'net_income',
+            'base_range': (50, 200),
+            'annual_drift_range': (0.02, 0.07),
+            'noise_scale': 0.07,
+            'bounds': (None, None),
+            'is_ratio': False,
+        },
+        {
+            'name': 'free_cash_flow',
+            'base_range': (40, 180),
+            'annual_drift_range': (0.02, 0.08),
+            'noise_scale': 0.08,
+            'bounds': (None, None),
+            'is_ratio': False,
+        },
+        {
+            'name': 'eps',
+            'base_range': (1.5, 5.0),
+            'annual_drift_range': (0.02, 0.06),
+            'noise_scale': 0.05,
+            'bounds': (None, None),
+            'is_ratio': False,
+        },
+        {
+            'name': 'operating_margin',
+            'base_range': (0.12, 0.28),
+            'annual_drift_range': (-0.01, 0.01),
+            'noise_scale': 0.01,
+            'bounds': (0.05, 0.4),
+            'is_ratio': True,
+        },
+        {
+            'name': 'debt_to_equity',
+            'base_range': (0.6, 1.6),
+            'annual_drift_range': (-0.03, 0.02),
+            'noise_scale': 0.04,
+            'bounds': (0.1, 2.5),
+            'is_ratio': True,
+        },
+        {
+            'name': 'dividend_yield',
+            'base_range': (0.01, 0.04),
+            'annual_drift_range': (-0.005, 0.005),
+            'noise_scale': 0.01,
+            'bounds': (0.0, 0.08),
+            'is_ratio': True,
+        },
+        {
+            'name': 'pe_ratio',
+            'base_range': (12, 25),
+            'annual_drift_range': (-0.05, 0.05),
+            'noise_scale': 0.1,
+            'bounds': (5, 40),
+            'is_ratio': True,
+        },
+        {
+            'name': 'price_to_book',
+            'base_range': (1.0, 3.5),
+            'annual_drift_range': (-0.03, 0.04),
+            'noise_scale': 0.06,
+            'bounds': (0.3, 6.0),
+            'is_ratio': True,
+        },
+    ]
+
+    metric_frames: Dict[str, pd.DataFrame] = {}
+    for spec in metric_specs:
+        data = []
+        for _ in tickers:
+            base = rng.uniform(*spec['base_range'])
+            annual_drift = rng.uniform(*spec['annual_drift_range'])
+            monthly_drift = annual_drift / 12
+            if spec['is_ratio']:
+                series = _generate_bounded_series(rng, months, base, monthly_drift, spec['noise_scale'], *spec['bounds'])
+            else:
+                series = _generate_growing_series(rng, months, base, monthly_drift, spec['noise_scale'])
+            data.append(series)
+        metric_frames[spec['name']] = pd.DataFrame(np.array(data).T, index=date_index, columns=tickers)
+
+    price_data = []
+    for _ in tickers:
+        start_price = rng.uniform(15, 120)
+        annual_return = rng.normal(0.06, 0.04)
+        annual_vol = rng.uniform(0.18, 0.35)
+        monthly_return = annual_return / 12
+        monthly_vol = annual_vol / np.sqrt(12)
+        shocks = rng.normal(monthly_return, monthly_vol, size=months)
+        series = start_price * np.exp(np.cumsum(shocks))
+        price_data.append(series)
+    prices_df = pd.DataFrame(np.array(price_data).T, index=date_index, columns=tickers)
+
+    return metric_frames, prices_df
 
 from quantstats.reports import html as qs_html
 
@@ -25,30 +165,40 @@ with st.sidebar:
         min_total_dates_ratio = st.number_input('Minimum total dates ratio:', min_value=0.0, max_value=1.0, value=0.8)
         data_directory_filepath = st.text_input('Filepath to data directory:',key='data_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo')
         prices_csv_filepath = st.text_input('Filepath to prices csv:',key='prices_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo\PriceClose.csv')
-        
+        use_sample_data = st.checkbox('Generate sample financial data', value=False)
+
         #Index constituency filtering parameters
         with st.expander('Index Constituency Filtering'):
             mask_filepath = st.text_input('Filepath to index constituency mask:',key='mask_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\Filtros\stoxx600_month_end_mask.csv')
             expected_stocks_per_date = st.number_input('Expexted stocks per date:',value=600,min_value=0)
-        
+
         init_form_button = st.form_submit_button()
-        
+
     if init_form_button:
-        #Read prices file and add to session state
-        st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
-        #Ignoring fitering functionality
-        if mask_filepath.lower() == 'none':
+        if use_sample_data:
+            metric_data, prices_df = generate_sample_financial_data()
+            st.session_state.prices_df = prices_df
             st.session_state.mask = None
-        else: #Read mask, add to session state
-            st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
-        #Read and filter the data in in the data directory
-        st.session_state.good_dfs,st.session_state.bad_dfs = af.filter_data(
-            fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
-        if 'data_dict' not in st.session_state:
-            st.session_state.data_dict = {}
-        st.session_state.data_dict.update(st.session_state.good_dfs)
-        #Show rejected files
-        st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
+            st.session_state.good_dfs = metric_data
+            st.session_state.bad_dfs = {}
+            st.session_state.data_dict = metric_data
+            st.info('Sample financial dataset generated for 50 stocks across 25 years of monthly observations.')
+        else:
+            #Read prices file and add to session state
+            st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
+            #Ignoring fitering functionality
+            if mask_filepath.lower() == 'none':
+                st.session_state.mask = None
+            else: #Read mask, add to session state
+                st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
+            #Read and filter the data in in the data directory
+            st.session_state.good_dfs,st.session_state.bad_dfs = af.filter_data(
+                fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
+            if 'data_dict' not in st.session_state:
+                st.session_state.data_dict = {}
+            st.session_state.data_dict.update(st.session_state.good_dfs)
+            #Show rejected files
+            st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
         st.session_state.start_app = True
         
 #Load the platform when flag
