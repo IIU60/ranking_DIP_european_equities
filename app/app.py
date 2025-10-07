@@ -1,11 +1,12 @@
 import os
+
 import pandas as pd
 import streamlit as st
 
 import app_functions as af
 import plots as pl
 import custom_calculations as calcs
-
+from sample_data import generate_sample_financial_data
 from quantstats.reports import html as qs_html
 
 
@@ -23,32 +24,45 @@ with st.sidebar:
         n_quantiles = st.number_input('Number of Quantiles:', min_value=1, value=10)
         min_stocks_per_date_ratio = st.number_input('Minimum stocks per date ratio:', min_value=0.0, max_value=1.0, value=0.8)
         min_total_dates_ratio = st.number_input('Minimum total dates ratio:', min_value=0.0, max_value=1.0, value=0.8)
-        data_directory_filepath = st.text_input('Filepath to data directory:',key='data_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo')
-        prices_csv_filepath = st.text_input('Filepath to prices csv:',key='prices_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\datos Hugo\PriceClose.csv')
-        
+        data_directory_filepath = st.text_input('Filepath to data directory:', key='data_fp')
+        prices_csv_filepath = st.text_input('Filepath to prices csv:', key='prices_fp')
+        st.warning(
+            'Provide local data paths above or use the option below to generate a sample dataset for quick exploration.'
+        )
+        use_sample_data = st.checkbox('Generate sample financial data', value=False)
+
         #Index constituency filtering parameters
         with st.expander('Index Constituency Filtering'):
             mask_filepath = st.text_input('Filepath to index constituency mask:',key='mask_fp', value=r'Z:\Interés Departamental\Model Portfolio\Laboratorio de Ideas\Python\Filtros\stoxx600_month_end_mask.csv')
             expected_stocks_per_date = st.number_input('Expexted stocks per date:',value=600,min_value=0)
-        
+
         init_form_button = st.form_submit_button()
-        
+
     if init_form_button:
-        #Read prices file and add to session state
-        st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
-        #Ignoring fitering functionality
-        if mask_filepath.lower() == 'none':
+        if use_sample_data:
+            metric_data, prices_df = generate_sample_financial_data()
+            st.session_state.prices_df = prices_df
             st.session_state.mask = None
-        else: #Read mask, add to session state
-            st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
-        #Read and filter the data in in the data directory
-        st.session_state.good_dfs,st.session_state.bad_dfs = af.filter_data(
-            fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
-        if 'data_dict' not in st.session_state:
-            st.session_state.data_dict = {}
-        st.session_state.data_dict.update(st.session_state.good_dfs)
-        #Show rejected files
-        st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
+            st.session_state.good_dfs = metric_data
+            st.session_state.bad_dfs = {}
+            st.session_state.data_dict = metric_data
+            st.info('Sample financial dataset generated for 50 stocks across 25 years of monthly observations.')
+        else:
+            #Read prices file and add to session state
+            st.session_state.prices_df = af.read_and_sort_data(fr'{prices_csv_filepath}')
+            #Ignoring fitering functionality
+            if mask_filepath.lower() == 'none':
+                st.session_state.mask = None
+            else: #Read mask, add to session state
+                st.session_state.mask = af.read_and_sort_data(fr'{mask_filepath}')
+            #Read and filter the data in in the data directory
+            st.session_state.good_dfs,st.session_state.bad_dfs = af.filter_data(
+                fr'{data_directory_filepath}',min_stocks_per_date_ratio,min_total_dates_ratio,expected_stocks_per_date,st.session_state.mask)
+            if 'data_dict' not in st.session_state:
+                st.session_state.data_dict = {}
+            st.session_state.data_dict.update(st.session_state.good_dfs)
+            #Show rejected files
+            st.warning(f'Rejected Data:\n{list(st.session_state.bad_dfs.keys())}')
         st.session_state.start_app = True
         
 #Load the platform when flag
