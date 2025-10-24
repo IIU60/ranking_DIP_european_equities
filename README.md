@@ -1,4 +1,5 @@
 # Equities Ranking Platform
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/IIU60/ranking_DIP_european_equities)
 
 **Live Streamlit App:** [Link](https://stock-ranking-platform.streamlit.app)
 
